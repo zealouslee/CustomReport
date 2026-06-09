@@ -7,25 +7,28 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
     <style>
         body { padding: 16px; }
-        .report-title { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
-        .report-actions { display:flex; gap:8px; align-items:center; }
+        .report-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        .report-header .report-title { font-size: 18px; font-weight: 600; }
         .filter-row { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
         .filter-item { min-width: 240px; }
         .filter-item .layui-form-label { width: 90px; }
         .filter-item .layui-input-block { margin-left: 120px; }
         .daterange-box { display:flex; gap:8px; align-items:center; }
         .daterange-quick { min-width: 96px; }
+        .filter-actions { display:flex; gap:8px; align-items:center; margin-top:8px; }
     </style>
 </head>
 <body class="layui-bg-gray">
 <div class="layui-card">
     <div class="layui-card-body">
-        <div class="report-title" id="reportTitle">报表加载中...</div>
+        <div class="report-header">
+            <div class="report-title" id="reportTitle">报表加载中...</div>
+            <a href="/backend/report" class="layui-btn layui-btn-sm layui-btn-primary">返回报表列表</a>
+        </div>
 
         <form class="layui-form" id="filterForm" lay-filter="filterForm">
             <div class="filter-row" id="filterRow"></div>
-            <div style="margin-top: 8px;" class="report-actions">
-                <a href="/backend/report" class="layui-btn layui-btn-primary">返回报表列表</a>
+            <div class="filter-actions">
                 <button class="layui-btn" lay-submit lay-filter="doSearch">查询</button>
                 <button type="button" class="layui-btn layui-btn-normal" id="btnExport">导出Excel</button>
             </div>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>后台登录</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
+    <style>
+        body {
+            background: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-wrapper {
+            width: 380px;
+            padding: 40px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.1);
+        }
+        .login-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .login-btn {
+            width: 100%;
+        }
+        .login-error {
+            color: #FF5722;
+            text-align: center;
+            margin-bottom: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="login-wrapper">
+    <div class="login-title">后台管理登录</div>
+    <div class="login-error" id="loginError"></div>
+    <form class="layui-form" id="loginForm">
+        <div class="layui-form-item">
+            <input type="text" name="username" required lay-verify="required" placeholder="请输入用户名" autocomplete="username" class="layui-input">
+        </div>
+        <div class="layui-form-item">
+            <input type="password" name="password" required lay-verify="required" placeholder="请输入密码" autocomplete="current-password" class="layui-input">
+        </div>
+        <div class="layui-form-item">
+            <button class="layui-btn login-btn" lay-submit lay-filter="doLogin">登 录</button>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/layui.js"></script>
+<script>
+layui.use(['form', 'jquery'], function () {
+    var form = layui.form;
+    var $ = layui.jquery;
+    var errBox = document.getElementById('loginError');
+
+    form.on('submit(doLogin)', function (data) {
+        $.ajax({
+            type: 'POST',
+            url: '/backend/doLogin',
+            data: data.field,
+            dataType: 'json',
+            success: function (res) {
+                if (res.code === 0) {
+                    window.location.href = '/backend/report/user_list';
+                } else {
+                    errBox.style.display = 'block';
+                    errBox.textContent = res.msg || '登录失败';
+                }
+            },
+            error: function () {
+                errBox.style.display = 'block';
+                errBox.textContent = '网络错误，请稍后重试';
+            }
+        });
+        return false;
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>报表</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
+    <style>
+        body { padding: 16px; }
+        .report-title { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+        .report-actions { display:flex; gap:8px; align-items:center; }
+        .filter-row { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+        .filter-item { min-width: 240px; }
+        .filter-item .layui-form-label { width: 90px; }
+        .filter-item .layui-input-block { margin-left: 120px; }
+        .daterange-box { display:flex; gap:8px; align-items:center; }
+        .daterange-quick { min-width: 96px; }
+    </style>
+</head>
+<body class="layui-bg-gray">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <div class="report-title" id="reportTitle">报表加载中...</div>
+
+        <form class="layui-form" id="filterForm" lay-filter="filterForm">
+            <div class="filter-row" id="filterRow"></div>
+            <div style="margin-top: 8px;" class="report-actions">
+                <button class="layui-btn" lay-submit lay-filter="doSearch">查询</button>
+                <button type="button" class="layui-btn layui-btn-normal" id="btnExport">导出Excel</button>
+            </div>
+        </form>
+
+        <table id="reportTable" lay-filter="reportTable"></table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/layui.js"></script>
+<script>
+layui.use(['form', 'table', 'laydate', 'layer'], function () {
+    const form = layui.form;
+    const table = layui.table;
+    const laydate = layui.laydate;
+    const layer = layui.layer;
+
+    const reportCode = "{:htmlspecialchars($code)}";
+    let reportCfg = null;
+
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function fmtDate(d) {
+        return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+    function fmtDateTime(d) {
+        return fmtDate(d) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+    }
+    function addDays(d, days) {
+        const x = new Date(d.getTime());
+        x.setDate(x.getDate() + days);
+        return x;
+    }
+    function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+    function startOfDay(d) { const x = new Date(d.getTime()); x.setHours(0,0,0,0); return x; }
+    function endOfDay(d) { const x = new Date(d.getTime()); x.setHours(23,59,59,0); return x; }
+    function endOfYesterday() {
+        const d = new Date();
+        d.setHours(0,0,0,0);
+        return addDays(d, -1);
+    }
+
+    function buildInput(filter) {
+        const name = filter.param_name;
+        const label = filter.label || name;
+        const type = (filter.form_type || 'text').toLowerCase();
+        const required = String(filter.required) === '1';
+        const defVal = filter.default_value ?? '';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'layui-form-item filter-item';
+
+        const reqMark = required ? '<span style="color:#FF5722">*</span>' : '';
+        wrap.innerHTML = `
+          <label class="layui-form-label">${reqMark}${label}</label>
+          <div class="layui-input-block" id="wrap_${name}"></div>
+        `;
+
+        const host = wrap.querySelector('#wrap_' + name);
+
+        if (type === 'select') {
+            const sel = document.createElement('select');
+            sel.name = name;
+            (filter.options || []).forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt.value;
+                o.textContent = opt.label ?? opt.value;
+                if (String(opt.value) === String(defVal)) o.selected = true;
+                sel.appendChild(o);
+            });
+            host.appendChild(sel);
+            return wrap;
+        }
+
+        const input = document.createElement('input');
+        input.className = 'layui-input';
+        input.name = name;
+        input.placeholder = '请输入' + label;
+        input.value = defVal;
+
+        if (type === 'date') {
+            input.id = 'd_' + name;
+            host.appendChild(input);
+            laydate.render({ elem: '#' + input.id, type: 'date' });
+            return wrap;
+        }
+
+        if (type === 'datetime') {
+            input.id = 'dt_' + name;
+            host.appendChild(input);
+            laydate.render({ elem: '#' + input.id, type: 'datetime' });
+            return wrap;
+        }
+
+        if (type === 'daterange') {
+            // 纯下拉选择：快捷时间范围选择
+            const box = document.createElement('div');
+            box.className = 'daterange-box';
+
+            const sel = document.createElement('select');
+            sel.name = name;
+            sel.innerHTML = `
+              <option value="">请选择${label}</option>
+              <option value="today">当天</option>
+              <option value="yesterday">昨天</option>
+              <option value="7d">最近一周</option>
+              <option value="1m">最近一个月</option>
+              <option value="3m">最近三个月</option>
+              <option value="6m">最近半年</option>
+              <option value="1y">最近一年</option>
+              <option value="this_month">本月</option>
+            `;
+
+            const hidStart = document.createElement('input');
+            hidStart.type = 'hidden';
+            hidStart.name = name + '_start';
+            hidStart.id = 'drs_' + name;
+
+            const hidEnd = document.createElement('input');
+            hidEnd.type = 'hidden';
+            hidEnd.name = name + '_end';
+            hidEnd.id = 'dre_' + name;
+
+            box.appendChild(sel);
+            host.appendChild(box);
+            host.appendChild(hidStart);
+            host.appendChild(hidEnd);
+
+            sel.addEventListener('change', function () {
+                const v = sel.value;
+                if (!v) {
+                    hidStart.value = '';
+                    hidEnd.value = '';
+                    return;
+                }
+                const today0 = startOfDay(new Date());
+                const todayEnd = endOfDay(new Date());
+
+                const ranges = {
+                    'today':        [today0, todayEnd],
+                    'yesterday':    [startOfDay(endOfYesterday()), endOfDay(endOfYesterday())],
+                    '7d':           [startOfDay(addDays(today0, -6)), todayEnd],
+                    '1m':           [startOfDay(addDays(today0, -30)), todayEnd],
+                    '3m':           [startOfDay(addDays(today0, -90)), todayEnd],
+                    '6m':           [startOfDay(addDays(today0, -180)), todayEnd],
+                    '1y':           [startOfDay(addDays(today0, -365)), todayEnd],
+                    'this_month':   [startOfDay(startOfMonth(today0)), todayEnd],
+                };
+                const range = ranges[v];
+                if (range) {
+                    hidStart.value = fmtDateTime(range[0]);
+                    hidEnd.value = fmtDateTime(range[1]);
+                }
+            });
+
+            return wrap;
+        }
+
+        host.appendChild(input);
+        return wrap;
+    }
+
+    function getFormParams() {
+        const fd = new FormData(document.getElementById('filterForm'));
+        const obj = {};
+        for (const [k, v] of fd.entries()) {
+            if (v !== null && v !== '') obj[k] = v;
+        }
+        return obj;
+    }
+
+    function renderTable(cols, defaultLimit) {
+        table.render({
+            elem: '#reportTable',
+            url: '/backend/api/report/data',
+            method: 'get',
+            where: Object.assign({ code: reportCode }, getFormParams()),
+            page: true,
+            limit: defaultLimit || 20,
+            cols: [cols.map(c => ({
+                field: c.field,
+                title: c.title || c.field,
+                width: c.width || undefined,
+                sort: !!c.sort,
+                templet: function (d) {
+                    // 把 Unix 时间戳格式化为可读日期
+                    if (c.field === 'create_time' && d[c.field] && typeof d[c.field] === 'number') {
+                        const dt = new Date(d[c.field] * 1000);
+                        return dt.getFullYear() + '-' +
+                            String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                            String(dt.getDate()).padStart(2, '0') + ' ' +
+                            String(dt.getHours()).padStart(2, '0') + ':' +
+                            String(dt.getMinutes()).padStart(2, '0') + ':' +
+                            String(dt.getSeconds()).padStart(2, '0');
+                    }
+                    return d[c.field];
+                }
+            }))],
+        });
+    }
+
+    async function init() {
+        const res = await fetch('/backend/api/report/config?code=' + encodeURIComponent(reportCode));
+        const json = await res.json();
+        if (json.code !== 0) {
+            layer.msg(json.msg || '加载配置失败');
+            return;
+        }
+        reportCfg = json.data;
+        document.getElementById('reportTitle').textContent = reportCfg.report.name + '（' + reportCfg.report.code + '）';
+
+        const row = document.getElementById('filterRow');
+        row.innerHTML = '';
+        (reportCfg.filters || []).forEach(f => row.appendChild(buildInput(f)));
+
+        form.render();
+        renderTable(reportCfg.cols || [], reportCfg.report.default_limit);
+    }
+
+    form.on('submit(doSearch)', function () {
+        table.reload('reportTable', {
+            where: Object.assign({ code: reportCode }, getFormParams()),
+            page: { curr: 1 }
+        });
+        return false;
+    });
+
+    document.getElementById('btnExport').addEventListener('click', function () {
+        const params = new URLSearchParams(Object.assign({ code: reportCode }, getFormParams()));
+        window.location.href = '/backend/api/report/export?' + params.toString();
+    });
+
+    init();
+});
+</script>
+</body>
+</html>
+

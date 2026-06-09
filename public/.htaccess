@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # 检查文件或目录是否真实存在，如果存在则直接访问
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # 重写所有请求到index.php
+    RewriteRule ^ index.php [L]
+</IfModule>

@@ -120,11 +120,13 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
 
         if (type === 'daterange') {
             // 纯下拉选择：快捷时间范围选择
+            // 存储最近选择的值，用于搜索时提交
             const box = document.createElement('div');
             box.className = 'daterange-box';
 
             const sel = document.createElement('select');
             sel.name = name;
+            sel.setAttribute('data-daterange', '1');
             sel.innerHTML = `
               <option value="">请选择${label}</option>
               <option value="today">当天</option>
@@ -152,33 +154,6 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
             host.appendChild(hidStart);
             host.appendChild(hidEnd);
 
-            sel.addEventListener('change', function () {
-                const v = sel.value;
-                if (!v) {
-                    hidStart.value = '';
-                    hidEnd.value = '';
-                    return;
-                }
-                const today0 = startOfDay(new Date());
-                const todayEnd = endOfDay(new Date());
-
-                const ranges = {
-                    'today':        [today0, todayEnd],
-                    'yesterday':    [startOfDay(endOfYesterday()), endOfDay(endOfYesterday())],
-                    '7d':           [startOfDay(addDays(today0, -6)), todayEnd],
-                    '1m':           [startOfDay(addDays(today0, -30)), todayEnd],
-                    '3m':           [startOfDay(addDays(today0, -90)), todayEnd],
-                    '6m':           [startOfDay(addDays(today0, -180)), todayEnd],
-                    '1y':           [startOfDay(addDays(today0, -365)), todayEnd],
-                    'this_month':   [startOfDay(startOfMonth(today0)), todayEnd],
-                };
-                const range = ranges[v];
-                if (range) {
-                    hidStart.value = fmtDateTime(range[0]);
-                    hidEnd.value = fmtDateTime(range[1]);
-                }
-            });
-
             return wrap;
         }
 
@@ -192,6 +167,29 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
         for (const [k, v] of fd.entries()) {
             if (v !== null && v !== '') obj[k] = v;
         }
+        // daterange 下拉：在提交时动态计算起止时间
+        document.querySelectorAll('select[data-daterange="1"]').forEach(function (sel) {
+            const name = sel.name;
+            const v = sel.value;
+            if (!v) return;
+            const today0 = startOfDay(new Date());
+            const todayEnd = endOfDay(new Date());
+            const ranges = {
+                'today':        [today0, todayEnd],
+                'yesterday':    [startOfDay(endOfYesterday()), endOfDay(endOfYesterday())],
+                '7d':           [startOfDay(addDays(today0, -6)), todayEnd],
+                '1m':           [startOfDay(addDays(today0, -30)), todayEnd],
+                '3m':           [startOfDay(addDays(today0, -90)), todayEnd],
+                '6m':           [startOfDay(addDays(today0, -180)), todayEnd],
+                '1y':           [startOfDay(addDays(today0, -365)), todayEnd],
+                'this_month':   [startOfDay(startOfMonth(today0)), todayEnd],
+            };
+            const range = ranges[v];
+            if (range) {
+                obj[name + '_start'] = fmtDateTime(range[0]);
+                obj[name + '_end'] = fmtDateTime(range[1]);
+            }
+        });
         return obj;
     }
 

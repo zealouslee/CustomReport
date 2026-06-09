@@ -21,10 +21,10 @@ class ReportApi extends Backend
 
     public function data()
     {
-        $code = (string)request()->get('code', '');
-        $page = (int)request()->get('page', 1);
-        $limit = (int)request()->get('limit', 20);
-        $params = request()->get();
+        $code = (string)request()->param('code', '');
+        $page = (int)request()->param('page', 1);
+        $limit = (int)request()->param('limit', 20);
+        $params = request()->param();
         unset($params['code'], $params['page'], $params['limit']);
 
         $svc = new ReportService();

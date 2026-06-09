@@ -172,9 +172,17 @@ class ReportService
                 }
                 $k1 = $bindKeyBase . '_start';
                 $k2 = $bindKeyBase . '_end';
-                $where .= ' AND ' . $expr . ' BETWEEN :' . $k1 . ' AND :' . $k2;
-                $bind[$k1] = $start;
-                $bind[$k2] = $end;
+                if ($start !== null && $start !== '' && $end !== null && $end !== '') {
+                    $where .= ' AND ' . $expr . ' BETWEEN :' . $k1 . ' AND :' . $k2;
+                    $bind[$k1] = $start;
+                    $bind[$k2] = $end;
+                } elseif ($start !== null && $start !== '') {
+                    $where .= ' AND ' . $expr . ' >= :' . $k1;
+                    $bind[$k1] = $start;
+                } else {
+                    $where .= ' AND ' . $expr . ' <= :' . $k2;
+                    $bind[$k2] = $end;
+                }
                 continue;
             }
 

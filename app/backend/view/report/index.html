@@ -20,12 +20,12 @@
 <body class="layui-bg-gray">
 <div class="layui-card">
     <div class="layui-card-body">
-        <div style="margin-bottom: 8px;"><a href="/backend/report" class="layui-btn layui-btn-sm layui-btn-primary">&larr; 返回报表列表</a></div>
         <div class="report-title" id="reportTitle">报表加载中...</div>
 
         <form class="layui-form" id="filterForm" lay-filter="filterForm">
             <div class="filter-row" id="filterRow"></div>
             <div style="margin-top: 8px;" class="report-actions">
+                <a href="/backend/report" class="layui-btn layui-btn-primary">返回报表列表</a>
                 <button class="layui-btn" lay-submit lay-filter="doSearch">查询</button>
                 <button type="button" class="layui-btn layui-btn-normal" id="btnExport">导出Excel</button>
             </div>

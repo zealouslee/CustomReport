@@ -130,10 +130,8 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
             box.appendChild(inputEnd);
             host.appendChild(box);
 
-            laydate.render({ elem: '#drs_' + name, type: 'date' });
-            laydate.render({ elem: '#dre_' + name, type: 'date' });
-
             return wrap;
+        }
         }
 
         host.appendChild(input);
@@ -191,9 +189,18 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
 
         const row = document.getElementById('filterRow');
         row.innerHTML = '';
-        (reportCfg.filters || []).forEach(f => row.appendChild(buildInput(f)));
+        const dateRangeNames = [];
+        (reportCfg.filters || []).forEach(f => {
+            row.appendChild(buildInput(f));
+            if (f.form_type === 'daterange') dateRangeNames.push(f.param_name);
+        });
 
         form.render();
+        // 日期范围输入框初始化 laydate（必须在 DOM 追加后调用）
+        dateRangeNames.forEach(function (name) {
+            laydate.render({ elem: '#drs_' + name, type: 'date' });
+            laydate.render({ elem: '#dre_' + name, type: 'date' });
+        });
         renderTable(reportCfg.cols || [], reportCfg.report.default_limit);
     }
 

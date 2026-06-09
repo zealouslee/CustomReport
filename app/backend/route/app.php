@@ -7,6 +7,7 @@ Route::post('doLogin', 'Login/doLogin');
 Route::get('logout', 'Login/logout');
 
 // 报表路由
+Route::get('report$', 'Report/list');
 Route::get('report/:code', 'Report/index');
 
 // 报表 API 路由

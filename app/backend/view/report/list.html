@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>报表列表</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
+    <style>
+        body { padding: 24px; background: #f2f2f2; }
+        .page-title { font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #333; }
+        .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .report-card {
+            background: #fff; border-radius: 8px; padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08); cursor: pointer;
+            transition: box-shadow .2s, transform .2s;
+            border: 1px solid #eee;
+        }
+        .report-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,.12); transform: translateY(-2px);
+            border-color: #5fb878;
+        }
+        .report-card .name { font-size: 18px; font-weight: 500; color: #333; }
+        .report-card .code { font-size: 13px; color: #999; margin-top: 6px; }
+        .report-card .arrow { float: right; color: #5fb878; font-size: 24px; line-height: 1; }
+    </style>
+</head>
+<body>
+    <div class="page-title">报表列表</div>
+    <div class="report-grid">
+        {volist name="reports" id="vo"}
+        <div class="report-card" onclick="window.location.href='/backend/report/{$vo.code}'">
+            <span class="arrow">&rarr;</span>
+            <div class="name">{$vo.name|htmlspecialchars}</div>
+            <div class="code">{$vo.code|htmlspecialchars}</div>
+        </div>
+        {/volist}
+    </div>
+    <div style="margin-top: 24px; text-align: center; color: #999; font-size: 13px;">
+        共 {$reports|count} 个报表
+    </div>
+</body>
+</html>

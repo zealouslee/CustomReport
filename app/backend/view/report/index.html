@@ -10,9 +10,15 @@
         .report-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
         .report-header .report-title { font-size: 18px; font-weight: 600; }
         .filter-row { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
-        .filter-item { min-width: 240px; }
-        .filter-item .layui-form-label { width: 90px; }
-        .filter-item .layui-input-block { margin-left: 120px; }
+        .filter-item { min-width: 260px; }
+        .filter-item .layui-form-label {
+            width: 100px;
+            font-weight: 700;
+            text-align: right;
+            padding: 9px 10px;
+        }
+        .filter-item .layui-input-block { margin-left: 120px; min-height: 38px; }
+        .filter-item .layui-input-block .layui-input { height: 38px; }
         .daterange-box { display:flex; gap:4px; align-items:center; }
         .daterange-box .layui-input { width: 130px; }
         .filter-actions { display:flex; gap:8px; align-items:center; margin-top:8px; }

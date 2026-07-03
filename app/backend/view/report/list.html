@@ -6,26 +6,57 @@
     <title>报表列表</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
     <style>
-        body { padding: 24px; background: #f2f2f2; }
-        .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        body {
+            padding: 24px; background: #f2f2f2;
+            animation: fadeIn 0.4s ease;
+        }
+        .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; animation: fadeInUp 0.5s ease; }
         .top-bar .sys-title { font-size:20px; font-weight:700; color:#0c4a6e; }
         .top-bar .top-actions { display:flex; align-items:center; gap:12px; }
         .top-bar .top-actions .user-info { font-size:13px; color:#888; }
-        .page-title { font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #333; }
-        .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .page-title {
+            font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #333;
+            animation: fadeInUp 0.5s ease 0.1s both;
+        }
+        .report-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
+        }
         .report-card {
             background: #fff; border-radius: 8px; padding: 24px;
             box-shadow: 0 1px 4px rgba(0,0,0,.08); cursor: pointer;
-            transition: box-shadow .2s, transform .2s;
+            transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
             border: 1px solid #eee;
+            animation: fadeInUp 0.45s ease both;
         }
+        .report-card:nth-child(1) { animation-delay: 0.05s; }
+        .report-card:nth-child(2) { animation-delay: 0.10s; }
+        .report-card:nth-child(3) { animation-delay: 0.15s; }
+        .report-card:nth-child(4) { animation-delay: 0.20s; }
+        .report-card:nth-child(5) { animation-delay: 0.25s; }
+        .report-card:nth-child(6) { animation-delay: 0.30s; }
+        .report-card:nth-child(7) { animation-delay: 0.35s; }
+        .report-card:nth-child(8) { animation-delay: 0.40s; }
+        .report-card:nth-child(9) { animation-delay: 0.45s; }
+        .report-card:nth-child(10){ animation-delay: 0.50s; }
         .report-card:hover {
-            box-shadow: 0 4px 16px rgba(0,0,0,.12); transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,.14); transform: translateY(-4px);
             border-color: #5fb878;
         }
         .report-card .name { font-size: 18px; font-weight: 500; color: #333; }
         .report-card .code { font-size: 13px; color: #999; margin-top: 6px; }
-        .report-card .arrow { float: right; color: #5fb878; font-size: 24px; line-height: 1; }
+        .report-card .arrow {
+            float: right; color: #5fb878; font-size: 24px; line-height: 1;
+            transition: transform .25s ease;
+        }
+        .report-card:hover .arrow { transform: translateX(4px); }
     </style>
 </head>
 <body>

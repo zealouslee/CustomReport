@@ -6,11 +6,36 @@
     <title>报表</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
     <style>
-        body { padding: 16px; }
-        .report-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        body { padding: 16px; animation: fadeIn 0.35s ease; }
+        .report-header {
+            display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+            animation: fadeInUp 0.4s ease;
+        }
         .report-header .report-title { font-size: 18px; font-weight: 600; }
         .filter-row { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
-        .filter-item { min-width: 260px; }
+        .filter-item {
+            min-width: 260px;
+            animation: fadeInUp 0.4s ease both;
+        }
+        .filter-item:nth-child(1) { animation-delay: 0.05s; }
+        .filter-item:nth-child(2) { animation-delay: 0.10s; }
+        .filter-item:nth-child(3) { animation-delay: 0.15s; }
+        .filter-item:nth-child(4) { animation-delay: 0.20s; }
+        .filter-item:nth-child(5) { animation-delay: 0.25s; }
+        .filter-item:nth-child(6) { animation-delay: 0.30s; }
+        .filter-item:nth-child(7) { animation-delay: 0.35s; }
         .filter-item .layui-form-label {
             width: 100px;
             font-weight: 700;
@@ -21,8 +46,11 @@
         .filter-item .layui-input-block .layui-input { height: 38px; }
         .daterange-box { display:flex; gap:4px; align-items:center; }
         .daterange-box .layui-input { width: 130px; }
-        .filter-actions { display:flex; gap:8px; align-items:center; margin-top:8px; }
-        /* 表格行鼠标悬停高亮 */
+        .filter-actions {
+            display:flex; gap:8px; align-items:center; margin-top:8px;
+            animation: fadeInUp 0.4s ease 0.3s both;
+        }
+        .layui-table { animation: fadeInUp 0.5s ease 0.35s both; }
         .layui-table tr:hover {
             background: #e8f4f8 !important;
         }

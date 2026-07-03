@@ -165,6 +165,19 @@
             min-width: 300px;
         }
 
+        .login-form > * {
+            animation: fadeInUp 0.5s ease both;
+        }
+        .login-form > .form-header    { animation-delay: 0.15s; }
+        .login-form > .login-error   { animation-delay: 0.20s; }
+        .login-form > .layui-form    { animation-delay: 0.25s; }
+        .login-form > .login-footer  { animation-delay: 0.35s; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
         .form-header {
             margin-bottom: 32px;
         }

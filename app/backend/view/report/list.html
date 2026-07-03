@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
     <style>
         body { padding: 24px; background: #f2f2f2; }
+        .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+        .top-bar .sys-title { font-size:20px; font-weight:700; color:#0c4a6e; }
+        .top-bar .top-actions { display:flex; align-items:center; gap:12px; }
+        .top-bar .top-actions .user-info { font-size:13px; color:#888; }
         .page-title { font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #333; }
         .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
         .report-card {
@@ -25,6 +29,12 @@
     </style>
 </head>
 <body>
+    <div class="top-bar">
+        <div class="sys-title">🏥 体检数据查询</div>
+        <div class="top-actions">
+            <a href="/backend/logout" class="layui-btn layui-btn-sm layui-btn-primary" onclick="return confirm('确定退出登录？')">退出登录</a>
+        </div>
+    </div>
     <div class="page-title">报表列表</div>
     <div class="report-grid">
         {volist name="reports" id="vo"}

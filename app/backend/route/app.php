@@ -14,3 +14,4 @@ Route::get('report/:code', 'Report/index');
 Route::get('api/report/config', 'ReportApi/config');
 Route::get('api/report/data', 'ReportApi/data');
 Route::get('api/report/export', 'ReportApi/export');
+Route::get('api/report/filterOptions', 'ReportApi/filterOptions');

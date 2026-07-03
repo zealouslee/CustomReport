@@ -16,6 +16,10 @@
         .daterange-box { display:flex; gap:4px; align-items:center; }
         .daterange-box .layui-input { width: 130px; }
         .filter-actions { display:flex; gap:8px; align-items:center; margin-top:8px; }
+        /* 表格行鼠标悬停高亮 */
+        .layui-table tr:hover {
+            background: #e8f4f8 !important;
+        }
     </style>
 </head>
 <body class="layui-bg-gray">
@@ -23,7 +27,10 @@
     <div class="layui-card-body">
         <div class="report-header">
             <div class="report-title" id="reportTitle">报表加载中...</div>
-            <a href="/backend/report" class="layui-btn">返回报表列表</a>
+            <div style="display:flex; gap:8px;">
+                <a href="/backend/report" class="layui-btn">返回报表列表</a>
+                <a href="/backend/logout" class="layui-btn layui-btn-primary" onclick="return confirm('确定退出登录？')">退出登录</a>
+            </div>
         </div>
 
         <form class="layui-form" id="filterForm" lay-filter="filterForm">
@@ -71,11 +78,17 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
         if (type === 'select') {
             const sel = document.createElement('select');
             sel.name = name;
+            sel.setAttribute('lay-filter', name);
+            sel.setAttribute('lay-search', '');
+            // 默认空选项，不传值
+            const emptyOpt = document.createElement('option');
+            emptyOpt.value = '';
+            emptyOpt.textContent = '请选择';
+            sel.appendChild(emptyOpt);
             (filter.options || []).forEach(opt => {
                 const o = document.createElement('option');
                 o.value = opt.value;
                 o.textContent = opt.label ?? opt.value;
-                if (String(opt.value) === String(defVal)) o.selected = true;
                 sel.appendChild(o);
             });
             host.appendChild(sel);
@@ -154,7 +167,9 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
             where: Object.assign({ code: reportCode }, getFormParams()),
             page: true,
             limit: defaultLimit || 20,
-            cols: [cols.map(c => ({
+            cols: [[
+                { type: 'numbers', title: '序号', width: 70 },
+                ...cols.map(c => ({
                 field: c.field,
                 title: c.title || c.field,
                 width: c.width || undefined,
@@ -170,37 +185,110 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
                             String(dt.getMinutes()).padStart(2, '0') + ':' +
                             String(dt.getSeconds()).padStart(2, '0');
                     }
-                    return d[c.field];
+                    return d[c.field] ?? '';
                 }
-            }))],
+            }))
+            ]],
         });
     }
 
+    // 筛选器数据缓存，供联动使用
+    const filterMap = {};
+
     async function init() {
-        const res = await fetch('/backend/api/report/config?code=' + encodeURIComponent(reportCode));
-        const json = await res.json();
-        if (json.code !== 0) {
-            layer.msg(json.msg || '加载配置失败');
+        try {
+            const res = await fetch('/backend/api/report/config?code=' + encodeURIComponent(reportCode));
+            if (!res.ok) {
+                layer.msg('加载配置失败 (HTTP ' + res.status + ')');
+                return;
+            }
+            const json = await res.json();
+            if (json.code !== 0) {
+                layer.msg(json.msg || '加载配置失败');
+                return;
+            }
+            reportCfg = json.data;
+            document.getElementById('reportTitle').textContent = reportCfg.report.name + '（' + reportCfg.report.code + '）';
+
+            const row = document.getElementById('filterRow');
+            row.innerHTML = '';
+            const dateRangeNames = [];
+            (reportCfg.filters || []).forEach(f => {
+                filterMap[f.param_name] = f; // 缓存
+                row.appendChild(buildInput(f));
+                if (f.form_type === 'daterange') dateRangeNames.push(f.param_name);
+            });
+
+            form.render();
+
+            // 设置二级联动
+            (reportCfg.filters || []).forEach(f => {
+                if (f.depends_on) {
+                    const childEl = document.querySelector('select[name="' + f.param_name + '"]');
+                    if (childEl) {
+                        // 使用 layui 的 select 事件，保证在 layui 渲染后正确触发
+                        form.on('select(' + f.depends_on + ')', function (data) {
+                            rebuildCascadeSelect(childEl, f.param_name, data.value);
+                        });
+                        // 初始加载时，如果有默认选中值也触发联动
+                        const parentEl = document.querySelector('select[name="' + f.depends_on + '"]');
+                        if (parentEl && parentEl.value) {
+                            rebuildCascadeSelect(childEl, f.param_name, parentEl.value);
+                        }
+                    }
+                }
+            });
+
+            // 日期范围输入框初始化 laydate（必须在 DOM 追加后调用）
+            dateRangeNames.forEach(function (name) {
+                laydate.render({ elem: '#drs_' + name, type: 'date' });
+                laydate.render({ elem: '#dre_' + name, type: 'date' });
+            });
+            renderTable(reportCfg.cols || [], reportCfg.report.default_limit);
+        } catch (e) {
+            layer.msg('加载报表失败: ' + e.message);
+        }
+    }
+
+    /** 按父级值重建联动下拉选项（调用服务端 API） */
+    async function rebuildCascadeSelect(sel, paramName, parentValue) {
+        // 记住当前选中值
+        const oldVal = sel.value;
+        // 保留第一项（请选择）
+        while (sel.options.length > 1) {
+            sel.remove(1);
+        }
+        if (!parentValue) {
+            form.render('select');
             return;
         }
-        reportCfg = json.data;
-        document.getElementById('reportTitle').textContent = reportCfg.report.name + '（' + reportCfg.report.code + '）';
-
-        const row = document.getElementById('filterRow');
-        row.innerHTML = '';
-        const dateRangeNames = [];
-        (reportCfg.filters || []).forEach(f => {
-            row.appendChild(buildInput(f));
-            if (f.form_type === 'daterange') dateRangeNames.push(f.param_name);
-        });
-
-        form.render();
-        // 日期范围输入框初始化 laydate（必须在 DOM 追加后调用）
-        dateRangeNames.forEach(function (name) {
-            laydate.render({ elem: '#drs_' + name, type: 'date' });
-            laydate.render({ elem: '#dre_' + name, type: 'date' });
-        });
-        renderTable(reportCfg.cols || [], reportCfg.report.default_limit);
+        try {
+            const url = '/backend/api/report/filterOptions?code=' + encodeURIComponent(reportCode)
+                + '&param_name=' + encodeURIComponent(paramName)
+                + '&parent_value=' + encodeURIComponent(parentValue);
+            const res = await fetch(url);
+            const json = await res.json();
+            if (json.code === 0 && json.data) {
+                json.data.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.value;
+                    o.textContent = opt.label ?? opt.value;
+                    sel.appendChild(o);
+                });
+            }
+        } catch (e) {
+            console.error('加载联动选项失败', e);
+        }
+        // 恢复选中（如果之前的选项仍然可见）
+        if (oldVal) {
+            for (let i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === oldVal) {
+                    sel.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+        form.render('select');
     }
 
     form.on('submit(doSearch)', function () {

@@ -50,7 +50,16 @@ class ExceptionHandle extends Handle
      */
     public function render($request, Throwable $e): Response
     {
-        // 添加自定义异常处理机制
+        // API 请求统一返回 JSON
+        if ($request->isAjax() || str_contains($request->pathinfo(), 'api/')) {
+            $msg = $e->getMessage();
+            if ($e instanceof HttpException) {
+                $code = $e->getStatusCode();
+            } else {
+                $code = 500;
+            }
+            return json(['code' => -1, 'msg' => $msg], $code);
+        }
 
         // 其他错误交给系统处理
         return parent::render($request, $e);

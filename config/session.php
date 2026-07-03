@@ -12,8 +12,8 @@ return [
     'type'           => 'file',
     // 存储连接标识 当type使用cache的时候有效
     'store'          => null,
-    // 过期时间
-    'expire'         => 1440,
+    // 过期时间（秒），8 小时内无操作需重新登录
+    'expire'         => 28800,
     // 前缀
     'prefix'         => '',
 ];

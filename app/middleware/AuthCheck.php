@@ -11,7 +11,7 @@ class AuthCheck
     public function handle(Request $request, \Closure $next)
     {
         // 白名单路径：不需要认证（多应用模式，pathinfo 已去除模块前缀）
-        $whitelist = ['login', 'doLogin', 'captcha'];
+        $whitelist = ['login', 'doLogin'];
         $path = $request->pathinfo();
         // 兼容带后缀的路径
         $normalized = rtrim($path, '/');

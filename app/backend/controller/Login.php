@@ -13,7 +13,7 @@ class Login extends BaseController
     {
         // 如果已经登录，直接跳转到报表页
         if (Session::has('admin_id')) {
-            return redirect('/backend/report/user_list');
+            return redirect('/backend/report');
         }
         return view('login/index');
     }

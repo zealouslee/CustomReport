@@ -23,7 +23,7 @@ class ReportApi extends Backend
             $cfg = $svc->getReportConfig($code);
             return json(['code' => 0, 'msg' => '', 'data' => $cfg]);
         } catch (\Throwable $e) {
-            return json(['code' => -1, 'msg' => $e->getMessage()]);
+            return json(['code' => -1, 'msg' => '加载报表配置失败']);
         }
     }
 
@@ -43,7 +43,7 @@ class ReportApi extends Backend
 
             return json(['code' => 0, 'msg' => '', 'data' => $options]);
         } catch (\Throwable $e) {
-            return json(['code' => -1, 'msg' => $e->getMessage()]);
+            return json(['code' => -1, 'msg' => '加载筛选选项失败']);
         }
     }
 
@@ -61,16 +61,15 @@ class ReportApi extends Backend
 
             return json(['code' => 0, 'msg' => '', 'count' => $total, 'data' => $rows]);
         } catch (\Throwable $e) {
-            return json(['code' => -1, 'msg' => $e->getMessage()]);
+            return json(['code' => -1, 'msg' => '查询数据失败']);
         }
     }
 
     public function export()
     {
         try {
-            // 大数据量导出时临时放宽内存限制
-            $originalMemory = ini_get('memory_limit');
-            ini_set('memory_limit', '512M');
+                $originalMemory = ini_get('memory_limit');
+                ini_set('memory_limit', '512M');
 
             $code = (string)request()->get('code', '');
             $params = request()->get();
@@ -174,12 +173,14 @@ class ReportApi extends Backend
                     'Content-Disposition' => 'attachment; filename="' . rawurlencode($filename) . '"',
                 ]);
             } finally {
+                // 恢复内存限制
+                ini_set('memory_limit', $originalMemory);
                 if (file_exists($tmp)) {
                     unlink($tmp);
                 }
             }
         } catch (\Throwable $e) {
-            return json(['code' => -1, 'msg' => $e->getMessage()]);
+            return json(['code' => -1, 'msg' => '导出失败']);
         }
     }
 }

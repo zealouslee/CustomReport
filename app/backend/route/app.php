@@ -4,7 +4,7 @@ use think\facade\Route;
 // 登录路由（白名单，不需要认证）
 Route::get('login', 'Login/login');
 Route::post('doLogin', 'Login/doLogin');
-Route::get('logout', 'Login/logout');
+Route::post('logout', 'Login/logout');
 Route::get('api/userInfo', 'Login/userInfo');
 Route::post('api/changePassword', 'Login/changePassword');
 

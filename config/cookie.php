@@ -11,10 +11,10 @@ return [
     'domain'    => '',
     //  cookie 启用安全传输
     'secure'    => false,
-    // httponly设置
-    'httponly'  => false,
+    // httponly设置（防止 XSS 窃取 cookie）
+    'httponly'  => true,
     // 是否使用 setcookie
     'setcookie' => true,
-    // samesite 设置，支持 'strict' 'lax'
-    'samesite'  => '',
+    // samesite 设置，防止 CSRF
+    'samesite'  => 'lax',
 ];

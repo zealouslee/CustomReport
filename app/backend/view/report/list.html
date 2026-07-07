@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>报表列表</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css" integrity="sha384-Ujn9oAevd4LxTMAvUP2kXrE9TrNW0kLodmVhqLxkOhMGgNRKceTmR6oxy9/Liy/C" crossorigin="anonymous">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -380,6 +380,8 @@
 
 <script>
 (function() {
+    const csrfToken = "{:session('__token__')}";
+
     // ========== 用户菜单逻辑 ==========
     const avatarBtn = document.getElementById('userAvatarBtn');
     const dropdown = document.getElementById('userDropdown');
@@ -459,6 +461,7 @@
         const fd = new FormData();
         fd.append('old_password', oldPwd);
         fd.append('new_password', newPwd);
+        fd.append('__token__', csrfToken);
 
         fetch('/backend/api/changePassword', { method: 'POST', body: fd })
             .then(r => r.json())
@@ -494,7 +497,11 @@
         if (e.target === logoutOverlay) logoutOverlay.classList.remove('show');
     });
     document.getElementById('logoutConfirmBtn').addEventListener('click', function() {
-        window.location.href = '/backend/logout';
+        const fd = new FormData();
+        fd.append('__token__', csrfToken);
+        fetch('/backend/logout', { method: 'POST', body: fd })
+            .then(() => { window.location.href = '/backend/login'; })
+            .catch(() => { window.location.href = '/backend/login'; });
     });
 })();
 </script>

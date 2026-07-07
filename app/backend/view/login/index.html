@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>体检数据查询 - 登录</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css" integrity="sha384-Ujn9oAevd4LxTMAvUP2kXrE9TrNW0kLodmVhqLxkOhMGgNRKceTmR6oxy9/Liy/C" crossorigin="anonymous">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -358,6 +358,7 @@
             <div class="login-error" id="loginError"></div>
 
             <form class="layui-form" id="loginForm">
+                <input type="hidden" name="__token__" value="{:session('__token__')}">
                 <div class="layui-form-item">
                     <div class="input-group">
                         <span class="input-icon">👤</span>
@@ -392,7 +393,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/layui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/layui.js" integrity="sha384-HRc9U8xLAdNQUCn5/0Ifn8V1FXVw3snAi5Hs/6MiHIH1kL9X8x6P3wA+cBqDAEbA" crossorigin="anonymous"></script>
 <script>
 layui.use(['form', 'jquery'], function () {
     var form = layui.form;
@@ -402,7 +403,7 @@ layui.use(['form', 'jquery'], function () {
     var $password = $('input[name="password"]');
     var $remember = $('#rememberPwd');
 
-    // 加载保存的账号密码
+    // 加载保存的用户名（不存储密码）
     (function loadSaved() {
         var saved = localStorage.getItem('login_remember');
         if (saved) {
@@ -410,7 +411,6 @@ layui.use(['form', 'jquery'], function () {
                 var data = JSON.parse(saved);
                 if (data.username) {
                     $username.val(data.username);
-                    $password.val(data.password || '');
                     $remember.prop('checked', true);
                 }
             } catch (e) {}
@@ -425,11 +425,10 @@ layui.use(['form', 'jquery'], function () {
             dataType: 'json',
             success: function (res) {
                 if (res.code === 0) {
-                    // 记住密码
+                    // 仅记住用户名，不存储密码
                     if ($remember.is(':checked')) {
                         localStorage.setItem('login_remember', JSON.stringify({
-                            username: data.field.username,
-                            password: data.field.password
+                            username: data.field.username
                         }));
                     } else {
                         localStorage.removeItem('login_remember');

@@ -21,6 +21,11 @@ class AuthCheck
 
         foreach ($whitelist as $w) {
             if ($normalized === $w) {
+                // 白名单路由也需校验 CSRF（POST 请求）
+                if ($request->isPost()) {
+                    $csrfResult = $this->checkCsrf($request);
+                    if ($csrfResult !== null) return $csrfResult;
+                }
                 return $next($request);
             }
         }
@@ -35,6 +40,40 @@ class AuthCheck
             return redirect('/backend/login');
         }
 
-        return $next($request);
+        // 所有 POST/PUT/DELETE 请求校验 CSRF token
+        if ($request->isPost() || $request->method() === 'PUT' || $request->method() === 'DELETE') {
+            $csrfResult = $this->checkCsrf($request);
+            if ($csrfResult !== null) return $csrfResult;
+        }
+
+        return $next($request)->header([
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Frame-Options'        => 'SAMEORIGIN',
+            'X-XSS-Protection'       => '1; mode=block',
+            'Referrer-Policy'        => 'strict-origin-when-cross-origin',
+        ]);
+    }
+
+    /**
+     * 校验 CSRF token，通过返回 null，失败返回 JSON 响应
+     */
+    private function checkCsrf(Request $request)
+    {
+        $token = $request->post('__token__')
+            ?: $request->header('X-CSRF-TOKEN', '');
+
+        if (empty($token)) {
+            return json(['code' => -1, 'msg' => '安全验证失败，请刷新页面重试']);
+        }
+
+        $sessionToken = Session::get('__token__');
+        if (empty($sessionToken) || !hash_equals($sessionToken, $token)) {
+            // 验证失败，刷新 token 防止重放
+            Session::set('__token__', md5((string)microtime(true)));
+            return json(['code' => -1, 'msg' => '安全验证失败，请刷新页面重试']);
+        }
+
+        // 验证通过，token 保持有效直到页面刷新
+        return null;
     }
 }

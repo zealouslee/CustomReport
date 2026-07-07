@@ -68,6 +68,10 @@ class ReportApi extends Backend
     public function export()
     {
         try {
+            // 大数据量导出时临时放宽内存限制
+            $originalMemory = ini_get('memory_limit');
+            ini_set('memory_limit', '512M');
+
             $code = (string)request()->get('code', '');
             $params = request()->get();
             unset($params['code']);
@@ -79,6 +83,7 @@ class ReportApi extends Backend
             $rows = $svc->exportRows($code, $params, $max);
 
             $spreadsheet = new Spreadsheet();
+            $spreadsheet->getDefaultStyle()->getFont()->setName('宋体');
             $sheet = $spreadsheet->getActiveSheet();
 
             $cols = $cfg['cols'] ?? [];
@@ -115,10 +120,12 @@ class ReportApi extends Backend
                 $sheet->getStyle($cell)->applyFromArray($headerStyle);
                 $colIndex++;
             }
+            $sheet->getRowDimension(1)->setRowHeight(30);
 
             // 写入数据行
             foreach ($rows as $i => $row) {
                 $rowNum = $i + 2;
+                $sheet->getRowDimension($rowNum)->setRowHeight(22);
                 $colIndex = 1;
                 foreach ($cols as $c) {
                     $field = (string)($c['field'] ?? '');
@@ -129,13 +136,6 @@ class ReportApi extends Backend
                     $colIndex++;
                 }
 
-                // 偶数行浅蓝底色
-                if ($i % 2 === 1) {
-                    $range = 'A' . $rowNum . ':' . $lastCol . $rowNum;
-                    $sheet->getStyle($range)->getFill()
-                        ->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setARGB('FFD9E2F3');
-                }
             }
 
             // 整表细线边框
@@ -179,3 +179,4 @@ class ReportApi extends Backend
         }
     }
 }
+

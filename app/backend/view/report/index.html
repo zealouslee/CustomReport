@@ -24,10 +24,10 @@
             animation: fadeInUp 0.4s ease;
         }
         .report-header .report-title { font-size: 18px; font-weight: 600; }
-        .filter-row { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+        .filter-row { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; position:relative; z-index:1; }
         .filter-item {
             min-width: 260px;
-            animation: fadeInUp 0.4s ease both;
+            animation: fadeIn 0.4s ease both;
         }
         .filter-item:nth-child(1) { animation-delay: 0.05s; }
         .filter-item:nth-child(2) { animation-delay: 0.10s; }
@@ -47,18 +47,39 @@
         .daterange-box { display:flex; gap:4px; align-items:center; }
         .daterange-box .layui-input { width: 130px; }
         .filter-actions {
-            display:flex; gap:8px; align-items:center; margin-top:8px;
-            animation: fadeInUp 0.4s ease 0.3s both;
+            display:flex; gap:8px; align-items:center; margin-top:8px; margin-bottom:16px;
+            animation: fadeIn 0.4s ease 0.3s both;
         }
-        .layui-table { animation: fadeInUp 0.5s ease 0.35s both; }
+        .layui-table { animation: fadeIn 0.5s ease 0.35s both; }
+        /* 防止 select 下拉框被父容器裁剪 */
+        .layui-card { overflow: visible !important; }
+        .layui-card-body { overflow: visible !important; }
+        .layui-form-item,
+        .layui-input-block { overflow: visible !important; }
+        #filterForm, #filterForm .filter-row { overflow: visible !important; }
+        /* 筛选表单叠在 table 之上（区分 table-view 也带 layui-form 类） */
+        #filterForm { position: relative; z-index: 101; }
+        /* 下拉框最高 z-index，带阴影突出显示不被遮挡 */
+        .layui-form-select .layui-anim-upbit {
+            z-index: 99999 !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
+            /* 覆盖 layui 动画 transform，避免创建额外层叠上下文 */
+            animation: none !important;
+        }
+        /* 被打开的 select 所在的 filter-item 提升层级，避免被下方其他 select 覆盖 */
+        .layui-form-select.layui-form-selected {
+            z-index: 99999 !important;
+        }
+
+
         .layui-table tr:hover {
             background: #e8f4f8 !important;
         }
     </style>
 </head>
 <body class="layui-bg-gray">
-<div class="layui-card">
-    <div class="layui-card-body">
+<div class="layui-card" style="overflow:visible;">
+    <div class="layui-card-body" style="overflow:visible;">
         <div class="report-header">
             <div class="report-title" id="reportTitle">报表加载中...</div>
             <div style="display:flex; gap:8px;">
@@ -255,6 +276,32 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
 
             form.render();
 
+            // 初始化 select 层叠管理观察器
+            initSelectStackingObserver();
+            manageSelectStacking();
+
+            // 修复 select 下拉框被挡住：强制所有父容器不裁剪
+            function fixSelectOverflow() {
+                document.querySelectorAll('.layui-form-select').forEach(function (el) {
+                    // 确保 dl 下拉框 z-index 最高
+                    var dl = el.querySelector('.layui-anim-upbit');
+                    if (dl) {
+                        dl.style.setProperty('z-index', '99999', 'important');
+                    }
+                    // 遍历所有父容器强制 overflow:visible
+                    var p = el.parentElement;
+                    while (p && p !== document.body) {
+                        if (p.style) {
+                            p.style.setProperty('overflow', 'visible', 'important');
+                        }
+                        p = p.parentElement;
+                    }
+                });
+            }
+            fixSelectOverflow();
+            // layui 渲染后延迟再执行一次确保覆盖
+            setTimeout(fixSelectOverflow, 100);
+
             // 设置二级联动
             (reportCfg.filters || []).forEach(f => {
                 if (f.depends_on) {
@@ -279,6 +326,9 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
                 laydate.render({ elem: '#dre_' + name, type: 'date' });
             });
             renderTable(reportCfg.cols || [], reportCfg.report.default_limit);
+
+            // 表格渲染完后再次修复 select 下拉框，防止表格渲染重设 overflow
+            setTimeout(fixSelectOverflow, 50);
         } catch (e) {
             layer.msg('加载报表失败: ' + e.message);
         }
@@ -340,6 +390,50 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
 
     init();
 });
+
+// 管理 select 下拉层级：打开的 select 所在的 filter-item 提升到最高
+function manageSelectStacking() {
+    // 先清除所有 filter-item 的 z-index
+    document.querySelectorAll('.filter-item').forEach(function (item) {
+        item.style.zIndex = '';
+    });
+    // 给打开状态的 select 所在的 filter-item 设高层级
+    document.querySelectorAll('.layui-form-select.layui-form-selected').forEach(function (sel) {
+        var item = sel.closest('.filter-item');
+        if (item) item.style.setProperty('z-index', '99999', 'important');
+    });
+}
+
+// 全局点击修复：点击任何 select 下拉框时确保不被裁剪
+document.addEventListener('click', function (e) {
+    var sel = e.target.closest('.layui-form-select');
+    if (sel) {
+        var dl = sel.querySelector('.layui-anim-upbit');
+        if (dl) dl.style.setProperty('z-index', '99999', 'important');
+        // 遍历父容器强制 overflow: visible
+        var p = sel.parentElement;
+        while (p && p !== document.body) {
+            p.style.setProperty('overflow', 'visible', 'important');
+            p = p.parentElement;
+        }
+    }
+    // 延迟执行层叠管理，等待 layui 更新 class
+    setTimeout(manageSelectStacking, 50);
+});
+
+// 初始化 select 层叠管理观察器（监听 layui-form-selected class 变化）
+function initSelectStackingObserver() {
+    if (window._selectObserver) window._selectObserver.disconnect();
+    var observer = new MutationObserver(function () {
+        manageSelectStacking();
+    });
+    document.querySelectorAll('.layui-form-select').forEach(function (sel) {
+        observer.observe(sel, { attributes: true, attributeFilter: ['class'] });
+    });
+    window._selectObserver = observer;
+}
+// 首次初始化（已有的 select）
+initSelectStackingObserver();
 </script>
 </body>
 </html>

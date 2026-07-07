@@ -6,41 +6,107 @@
     <title>报表</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            padding: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 30%, #0891b2 60%, #06b6d4 100%);
+            position: relative;
+            animation: fadeIn 0.35s ease;
+        }
+
+        /* 背景装饰圆 */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            top: -200px;
+            right: -150px;
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+            bottom: -150px;
+            left: -100px;
+            pointer-events: none;
+        }
+
+        /* 网格背景纹理 */
+        .bg-pattern {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes fadeIn {
             from { opacity: 0; }
             to   { opacity: 1; }
         }
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-12px); }
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(12px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-        body { padding: 16px; animation: fadeIn 0.35s ease; }
+
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 32px);
+        }
+
         .report-header {
             display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
-            animation: fadeInUp 0.4s ease;
+            animation: slideInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            flex-shrink: 0;
         }
-        .report-header .report-title { font-size: 18px; font-weight: 600; }
+        .report-header .report-title { font-size: 18px; font-weight: 600; color: #1e293b; }
         .filter-row { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; position:relative; z-index:1; }
         .filter-item {
             min-width: 260px;
-            animation: fadeIn 0.4s ease both;
+            opacity: 0;
+            animation: slideInUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        .filter-item:nth-child(1) { animation-delay: 0.05s; }
-        .filter-item:nth-child(2) { animation-delay: 0.10s; }
-        .filter-item:nth-child(3) { animation-delay: 0.15s; }
-        .filter-item:nth-child(4) { animation-delay: 0.20s; }
-        .filter-item:nth-child(5) { animation-delay: 0.25s; }
-        .filter-item:nth-child(6) { animation-delay: 0.30s; }
-        .filter-item:nth-child(7) { animation-delay: 0.35s; }
+        .filter-item:nth-child(1) { animation-delay: 0.06s; }
+        .filter-item:nth-child(2) { animation-delay: 0.12s; }
+        .filter-item:nth-child(3) { animation-delay: 0.18s; }
+        .filter-item:nth-child(4) { animation-delay: 0.24s; }
+        .filter-item:nth-child(5) { animation-delay: 0.30s; }
+        .filter-item:nth-child(6) { animation-delay: 0.36s; }
+        .filter-item:nth-child(7) { animation-delay: 0.42s; }
         .filter-item .layui-form-label {
             width: 100px;
             font-weight: 700;
             text-align: right;
             padding: 9px 10px;
+            color: #334155;
         }
         .filter-item .layui-input-block { margin-left: 120px; min-height: 38px; }
         .filter-item .layui-input-block .layui-input { height: 38px; }
@@ -48,43 +114,513 @@
         .daterange-box .layui-input { width: 130px; }
         .filter-actions {
             display:flex; gap:8px; align-items:center; margin-top:8px; margin-bottom:16px;
-            animation: fadeIn 0.4s ease 0.3s both;
+            opacity: 0;
+            animation: slideInUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.40s forwards;
         }
-        .layui-table { animation: fadeIn 0.5s ease 0.35s both; }
-        /* 防止 select 下拉框被父容器裁剪 */
-        .layui-card { overflow: visible !important; }
-        .layui-card-body { overflow: visible !important; }
+        .layui-table-view { animation: fadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both; }
+
+        /* 毛玻璃卡片 */
+        .layui-card {
+            overflow: visible !important;
+            background: rgba(255,255,255,0.95) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.08) !important;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2) !important;
+            animation: cardIn 0.5s ease-out;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .layui-card-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding: 16px 20px;
+            overflow: hidden;
+        }
+
+        /* 表格区域内部滚动 */
+        .layui-table-view {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .layui-table-view .layui-table-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto !important;
+        }
+        .layui-table-page {
+            flex-shrink: 0;
+        }
         .layui-form-item,
         .layui-input-block { overflow: visible !important; }
         #filterForm, #filterForm .filter-row { overflow: visible !important; }
         /* 筛选表单叠在 table 之上（区分 table-view 也带 layui-form 类） */
-        #filterForm { position: relative; z-index: 101; }
+        #filterForm { position: relative; z-index: 101; flex-shrink: 0; }
         /* 下拉框最高 z-index，带阴影突出显示不被遮挡 */
         .layui-form-select .layui-anim-upbit {
             z-index: 99999 !important;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.08) !important;
+            border-radius: 10px !important;
+            border: 1px solid rgba(8,145,178,0.15) !important;
+            background: rgba(255,255,255,0.97) !important;
+            backdrop-filter: blur(12px);
+            padding: 6px 0 !important;
             /* 覆盖 layui 动画 transform，避免创建额外层叠上下文 */
             animation: none !important;
+        }
+        .layui-form-select dl {
+            border-radius: 10px !important;
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            background: transparent !important;
+        }
+        .layui-form-select dl dd {
+            padding: 0 14px !important;
+            line-height: 36px !important;
+            height: 36px !important;
+            border-radius: 6px !important;
+            margin: 2px 6px !important;
+            font-size: 14px !important;
+            color: #334155 !important;
+            transition: background .15s ease, color .15s ease !important;
+        }
+        .layui-form-select dl dd:hover {
+            background: linear-gradient(135deg, rgba(8,145,178,0.1), rgba(6,182,212,0.12)) !important;
+            color: #0891b2 !important;
+        }
+        .layui-form-select dl dd.layui-this {
+            background: linear-gradient(135deg, #0891b2, #06b6d4) !important;
+            color: #fff !important;
+            font-weight: 600 !important;
+        }
+        /* select 输入框统一风格 */
+        .layui-form-select .layui-input {
+            height: 38px !important;
+            border-radius: 10px !important;
+            border: 1.5px solid #e2e8f0 !important;
+            padding: 0 32px 0 12px !important;
+            font-size: 14px !important;
+            color: #334155 !important;
+            background: #fff !important;
+            transition: border-color .2s ease, box-shadow .2s ease !important;
+        }
+        .layui-form-select.layui-form-selected .layui-input {
+            border-color: #0891b2 !important;
+            box-shadow: 0 0 0 3px rgba(8,145,178,0.12) !important;
+        }
+        .layui-form-select .layui-edge {
+            border-top-color: #94a3b8 !important;
+            transition: transform .25s ease !important;
+        }
+        .layui-form-select.layui-form-selected .layui-edge {
+            border-top-color: #0891b2 !important;
         }
         /* 被打开的 select 所在的 filter-item 提升层级，避免被下方其他 select 覆盖 */
         .layui-form-select.layui-form-selected {
             z-index: 99999 !important;
         }
 
+        /* ========== 日期选择器统一风格 ========== */
+        .layui-laydate {
+            border-radius: 12px !important;
+            border: 1px solid rgba(8,145,178,0.15) !important;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.08) !important;
+            background: rgba(255,255,255,0.97) !important;
+            backdrop-filter: blur(12px);
+            overflow: hidden !important;
+        }
+        .layui-laydate .layui-laydate-main {
+            border-radius: 12px !important;
+        }
+        /* 日期头部（年月） */
+        .layui-laydate-header {
+            background: linear-gradient(135deg, #0891b2, #06b6d4) !important;
+            color: #fff !important;
+            padding: 12px 16px !important;
+        }
+        .layui-laydate-header span {
+            color: #fff !important;
+            font-weight: 600 !important;
+        }
+        .layui-laydate-header i {
+            color: rgba(255,255,255,0.8) !important;
+            transition: color .2s ease !important;
+        }
+        .layui-laydate-header i:hover {
+            color: #fff !important;
+        }
+        /* 日期内容区 */
+        .layui-laydate-content {
+            padding: 8px !important;
+        }
+        .layui-laydate-content table {
+            border-collapse: separate !important;
+            border-spacing: 2px !important;
+        }
+        .layui-laydate-content th {
+            color: #94a3b8 !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            padding: 6px 0 !important;
+        }
+        .layui-laydate-content td {
+            border-radius: 8px !important;
+            transition: background .15s ease, color .15s ease !important;
+            font-size: 13px !important;
+        }
+        .layui-laydate-content td.laydate-day-now {
+            color: #0891b2 !important;
+            background: rgba(8,145,178,0.08) !important;
+        }
+        .layui-laydate-content td:hover {
+            background: rgba(8,145,178,0.12) !important;
+            color: #0891b2 !important;
+        }
+        .layui-laydate-content td.laydate-selected {
+            background: linear-gradient(135deg, #0891b2, #06b6d4) !important;
+            color: #fff !important;
+        }
+        .layui-laydate-content td.laydate-selected:hover {
+            background: linear-gradient(135deg, #0891b2, #06b6d4) !important;
+            color: #fff !important;
+        }
+        /* 日期底部按钮栏 */
+        .layui-laydate-bottom {
+            border-top: 1px solid #f1f5f9 !important;
+            padding: 8px 12px !important;
+        }
+        .layui-laydate-bottom .layui-btn {
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            height: 32px !important;
+            line-height: 32px !important;
+            padding: 0 16px !important;
+        }
+        .layui-laydate-bottom .layui-btn-primary {
+            background: #f1f5f9 !important;
+            border: none !important;
+            color: #475569 !important;
+        }
+        .layui-laydate-bottom .layui-btn-primary:hover {
+            background: #e2e8f0 !important;
+        }
+        .layui-laydate-bottom .layui-btn-normal {
+            background: linear-gradient(135deg, #0891b2, #06b6d4) !important;
+            border: none !important;
+        }
+        /* laydate 时间面板统一 */
+        .layui-laydate .layui-laydate-content .laydate-time-list {
+            border-radius: 8px !important;
+        }
+        .layui-laydate .layui-laydate-content .laydate-time-list > li {
+            border-radius: 6px !important;
+        }
+        .layui-laydate .layui-laydate-content .laydate-time-list > li p {
+            color: #64748b !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+        }
+        .layui-laydate .layui-laydate-content .laydate-time-list > li ol li:hover {
+            background: rgba(8,145,178,0.1) !important;
+            color: #0891b2 !important;
+        }
+        .layui-laydate .layui-laydate-content .laydate-time-list > li ol li.laydate-time-selected {
+            background: linear-gradient(135deg, #0891b2, #06b6d4) !important;
+            color: #fff !important;
+        }
+        /* 日期输入框统一风格 */
+        .daterange-box .layui-input,
+        .filter-item .layui-input {
+            height: 38px !important;
+            border-radius: 10px !important;
+            border: 1.5px solid #e2e8f0 !important;
+            padding: 0 12px !important;
+            font-size: 14px !important;
+            color: #334155 !important;
+            background: #fff !important;
+            transition: border-color .2s ease, box-shadow .2s ease !important;
+        }
+        .daterange-box .layui-input:focus,
+        .filter-item .layui-input:focus {
+            border-color: #0891b2 !important;
+            box-shadow: 0 0 0 3px rgba(8,145,178,0.12) !important;
+        }
 
         .layui-table tr:hover {
             background: #e8f4f8 !important;
         }
+
+        /* 列宽自适应时，表格容器不强制撑满 */
+        .layui-table-view.auto-fit {
+            width: auto !important;
+            max-width: 100%;
+        }
+
+        /* 圆角按钮统一风格 */
+        .layui-btn {
+            border-radius: 10px !important;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: all .25s ease !important;
+        }
+        .layui-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+        }
+        .layui-btn-normal {
+            background: linear-gradient(135deg, #0891b2, #06b6d4) !important;
+            border: none !important;
+        }
+        .filter-actions .layui-btn {
+            min-width: 90px;
+        }
+
+        /* ========== 可收起用户菜单 ========== */
+        .user-menu-wrap { position: relative; }
+        .user-avatar-btn {
+            width: 38px; height: 38px; border-radius: 50%; border: 2px solid #0891b2;
+            background: linear-gradient(135deg, #0ea, #06b6d4);
+            color: #fff; font-size: 16px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all .25s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,.1);
+        }
+        .user-avatar-btn:hover {
+            transform: scale(1.08); border-color: #06b6d4; box-shadow: 0 4px 16px rgba(6,182,212,0.4);
+        }
+        .user-avatar-btn .status-dot {
+            position: absolute; bottom: 1px; right: 1px; width: 9px; height: 9px;
+            background: #22c55e; border-radius: 50%; border: 2px solid #fff;
+        }
+        .user-dropdown {
+            position: absolute; top: 48px; right: 0; width: 280px;
+            background: rgba(255,255,255,0.98); border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.05);
+            backdrop-filter: blur(20px);
+            opacity: 0; transform: translateY(-10px) scale(0.95);
+            pointer-events: none;
+            transition: opacity .25s cubic-bezier(0.22, 1, 0.36, 1), transform .25s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 99999;
+            overflow: hidden;
+        }
+        .user-dropdown.open {
+            opacity: 1; transform: translateY(0) scale(1); pointer-events: auto;
+        }
+        .ud-header {
+            background: linear-gradient(135deg, #0c4a6e, #0891b2);
+            padding: 20px; text-align: center; position: relative;
+        }
+        .ud-header::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent;
+            border-top: 8px solid #0891b2;
+        }
+        .ud-avatar {
+            width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 10px;
+            background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: #fff; font-weight: 700;
+        }
+        .ud-realname { font-size: 16px; font-weight: 600; color: #fff; }
+        .ud-username { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+        .ud-online {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 6px;
+        }
+        .ud-online i { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; display: inline-block; }
+        .ud-menu { padding: 12px 8px; }
+        .ud-menu-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: 10px; cursor: pointer; transition: background .2s, transform .15s;
+            color: #334155; font-size: 14px;
+        }
+        .ud-menu-item:hover { background: #f0f9ff; transform: translateX(4px); }
+        .ud-menu-item .ud-icon {
+            width: 36px; height: 36px; border-radius: 10px; display: flex;
+            align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+        }
+        .ud-icon-pwd { background: #dbeafe; color: #2563eb; }
+        .ud-icon-logout { background: #fee2e2; color: #dc2626; }
+        .ud-menu-item .ud-label { font-weight: 500; }
+        .ud-menu-item .ud-desc { font-size: 11px; color: #94a3b8; }
+        .ud-footer {
+            padding: 12px 16px; border-top: 1px solid #f1f5f9;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 11px; color: #94a3b8;
+        }
+        .user-menu-mask {
+            position: fixed; inset: 0; z-index: 99998; display: none;
+        }
+        .user-menu-mask.show { display: block; }
+
+        /* 修改密码弹窗 */
+        .pwd-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999999;
+            display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+        }
+        .pwd-modal-overlay.show { display: flex; }
+        .pwd-modal {
+            background: #fff; border-radius: 16px; width: 400px; max-width: 90vw;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3); animation: modalIn .3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .pwd-modal-head {
+            padding: 20px 24px; border-bottom: 1px solid #f1f5f9;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .pwd-modal-head h3 { font-size: 16px; color: #1e293b; }
+        .pwd-modal-close {
+            width: 32px; height: 32px; border-radius: 8px; border: none; background: #f1f5f9;
+            cursor: pointer; font-size: 18px; color: #64748b; transition: all .2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pwd-modal-close:hover { background: #fee2e2; color: #dc2626; }
+        .pwd-modal-body { padding: 24px; }
+        .pwd-field { margin-bottom: 16px; }
+        .pwd-field label { display: block; font-size: 13px; font-weight: 500; color: #475569; margin-bottom: 6px; }
+        .pwd-field input {
+            width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 10px;
+            padding: 0 14px; font-size: 14px; transition: border-color .2s, box-shadow .2s; outline: none;
+        }
+        .pwd-field input:focus { border-color: #0891b2; box-shadow: 0 0 0 3px rgba(8,145,178,0.15); }
+        .pwd-modal-foot {
+            padding: 16px 24px; border-top: 1px solid #f1f5f9;
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+        .pwd-btn {
+            padding: 10px 20px; border-radius: 10px; border: none; font-size: 14px;
+            font-weight: 500; cursor: pointer; transition: all .2s;
+        }
+        .pwd-btn-cancel { background: #f1f5f9; color: #475569; }
+        .pwd-btn-cancel:hover { background: #e2e8f0; }
+        .pwd-btn-submit { background: linear-gradient(135deg, #0891b2, #06b6d4); color: #fff; }
+        .pwd-btn-submit:hover { box-shadow: 0 4px 12px rgba(8,145,178,0.4); transform: translateY(-1px); }
+        .pwd-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* 退出确认弹窗 */
+        .logout-confirm-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999999;
+            display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+        }
+        .logout-confirm-overlay.show { display: flex; }
+        .logout-confirm {
+            background: #fff; border-radius: 16px; width: 360px; max-width: 90vw;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3); text-align: center;
+            animation: modalIn .3s cubic-bezier(0.22, 1, 0.36, 1); padding: 32px 24px 24px;
+        }
+        .logout-confirm .lc-icon {
+            width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 16px;
+            background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 32px;
+        }
+        .logout-confirm h3 { font-size: 18px; color: #1e293b; margin-bottom: 8px; }
+        .logout-confirm p { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+        .logout-confirm .lc-btns { display: flex; gap: 10px; justify-content: center; }
+        .logout-confirm .lc-btn {
+            flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px;
+            font-weight: 500; cursor: pointer; transition: all .2s;
+        }
+        .lc-btn-cancel { background: #f1f5f9; color: #475569; }
+        .lc-btn-cancel:hover { background: #e2e8f0; }
+        .lc-btn-confirm { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
+        .lc-btn-confirm:hover { box-shadow: 0 4px 12px rgba(220,38,38,0.4); transform: translateY(-1px); }
     </style>
 </head>
-<body class="layui-bg-gray">
-<div class="layui-card" style="overflow:visible;">
-    <div class="layui-card-body" style="overflow:visible;">
+<body>
+<div class="bg-pattern"></div>
+<div class="page-wrapper">
+<div class="layui-card">
+    <div class="layui-card-body">
         <div class="report-header">
             <div class="report-title" id="reportTitle">报表加载中...</div>
-            <div style="display:flex; gap:8px;">
+            <div style="display:flex; gap:8px; align-items:center;">
                 <a href="/backend/report" class="layui-btn">返回报表列表</a>
-                <a href="/backend/logout" class="layui-btn layui-btn-primary" onclick="return confirm('确定退出登录？')">退出登录</a>
+                <div class="user-menu-wrap" id="userMenuWrap">
+                    <div class="user-avatar-btn" id="userAvatarBtn" title="用户菜单">
+                        <span id="avatarInitial">A</span>
+                        <span class="status-dot"></span>
+                    </div>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="ud-header">
+                            <div class="ud-avatar" id="udAvatar">A</div>
+                            <div class="ud-realname" id="udRealname">加载中...</div>
+                            <div class="ud-username" id="udUsername">@...</div>
+                            <div class="ud-online"><i></i> 在线</div>
+                        </div>
+                        <div class="ud-menu">
+                            <div class="ud-menu-item" id="btnChangePwd">
+                                <div class="ud-icon ud-icon-pwd">🔑</div>
+                                <div>
+                                    <div class="ud-label">修改密码</div>
+                                    <div class="ud-desc">定期修改密码保障账户安全</div>
+                                </div>
+                            </div>
+                            <div class="ud-menu-item" id="btnLogout">
+                                <div class="ud-icon ud-icon-logout">🚪</div>
+                                <div>
+                                    <div class="ud-label">退出登录</div>
+                                    <div class="ud-desc">安全退出当前账号</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ud-footer">
+                            <span>体检数据查询系统</span>
+                            <span>v1.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="user-menu-mask" id="userMenuMask"></div>
+
+        <!-- 修改密码弹窗 -->
+        <div class="pwd-modal-overlay" id="pwdModalOverlay">
+            <div class="pwd-modal">
+                <div class="pwd-modal-head">
+                    <h3>🔑 修改密码</h3>
+                    <button class="pwd-modal-close" id="pwdModalClose">✕</button>
+                </div>
+                <div class="pwd-modal-body">
+                    <div class="pwd-field">
+                        <label>当前密码</label>
+                        <input type="password" id="pwdOld" placeholder="请输入当前密码" autocomplete="current-password">
+                    </div>
+                    <div class="pwd-field">
+                        <label>新密码</label>
+                        <input type="password" id="pwdNew" placeholder="请输入新密码（至少6位）" autocomplete="new-password">
+                    </div>
+                    <div class="pwd-field">
+                        <label>确认新密码</label>
+                        <input type="password" id="pwdConfirm" placeholder="请再次输入新密码" autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="pwd-modal-foot">
+                    <button class="pwd-btn pwd-btn-cancel" id="pwdCancelBtn">取消</button>
+                    <button class="pwd-btn pwd-btn-submit" id="pwdSubmitBtn">确认修改</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 退出确认弹窗 -->
+        <div class="logout-confirm-overlay" id="logoutConfirmOverlay">
+            <div class="logout-confirm">
+                <div class="lc-icon">👋</div>
+                <h3>确定退出登录？</h3>
+                <p>退出后需要重新登录才能访问系统</p>
+                <div class="lc-btns">
+                    <button class="lc-btn lc-btn-cancel" id="logoutCancelBtn">取消</button>
+                    <button class="lc-btn lc-btn-confirm" id="logoutConfirmBtn">确定退出</button>
+                </div>
             </div>
         </div>
 
@@ -99,6 +635,7 @@
         <table id="reportTable" lay-filter="reportTable"></table>
     </div>
 </div>
+</div><!-- /.page-wrapper -->
 
 <script src="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/layui.js"></script>
 <script>
@@ -214,7 +751,104 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
         return obj;
     }
 
+    /**
+     * 当报表内容不铺满全屏时，列宽自适应内容宽度
+     * 在 table done 回调中调用，测量每列实际内容宽度，
+     * 如果所有列内容总宽度 < 容器宽度，则将表格容器收缩到内容宽度
+     */
+    function autoFitColumns() {
+        const tableView = document.querySelector('.layui-table-view[lay-id="reportTable"]');
+        if (!tableView) return;
+
+        const tableHeader = tableView.querySelector('.layui-table-header table');
+        const tableBody = tableView.querySelector('.layui-table-body table');
+        if (!tableHeader && !tableBody) return;
+
+        const containerWidth = tableView.clientWidth;
+
+        // 测量每列的内容宽度（取表头和单元格中的最大值）
+        const colsWidths = [];
+        const colCount = tableHeader
+            ? tableHeader.querySelectorAll('thead th').length
+            : (tableBody ? tableBody.querySelectorAll('tbody tr:first-child td').length : 0);
+
+        for (let i = 0; i < colCount; i++) {
+            let maxW = 0;
+            // 测量表头
+            if (tableHeader) {
+                const th = tableHeader.querySelectorAll('thead th')[i];
+                if (th) {
+                    const thInner = th.querySelector('.layui-table-cell');
+                    if (thInner) maxW = Math.max(maxW, thInner.scrollWidth);
+                }
+            }
+            // 测量前 50 行数据单元格（避免大数据量时性能问题）
+            if (tableBody) {
+                const rows = tableBody.querySelectorAll('tbody tr');
+                const limit = Math.min(rows.length, 50);
+                for (let r = 0; r < limit; r++) {
+                    const td = rows[r].querySelectorAll('td')[i];
+                    if (td) {
+                        const tdInner = td.querySelector('.layui-table-cell');
+                        if (tdInner) maxW = Math.max(maxW, tdInner.scrollWidth);
+                    }
+                }
+            }
+            // 加上单元格内边距（左右各约 15px）
+            colsWidths.push(maxW + 30);
+        }
+
+        const totalContentWidth = colsWidths.reduce((s, w) => s + w, 0);
+
+        if (totalContentWidth < containerWidth) {
+            // 内容不足一屏，设置每列为内容宽度
+            tableView.classList.add('auto-fit');
+
+            const headerThs = tableHeader ? tableHeader.querySelectorAll('thead th') : [];
+            const bodyRows = tableBody ? tableBody.querySelectorAll('tbody tr') : [];
+
+            for (let i = 0; i < colsWidths.length; i++) {
+                const w = colsWidths[i] + 'px';
+                if (headerThs[i]) {
+                    headerThs[i].style.width = w;
+                    const hCell = headerThs[i].querySelector('.layui-table-cell');
+                    if (hCell) hCell.style.width = w;
+                }
+                for (let r = 0; r < bodyRows.length; r++) {
+                    const td = bodyRows[r].querySelectorAll('td')[i];
+                    if (td) {
+                        td.style.width = w;
+                        const bCell = td.querySelector('.layui-table-cell');
+                        if (bCell) bCell.style.width = w;
+                    }
+                }
+            }
+
+            // 同步固定列区域宽度
+            const fixedLeft = tableView.querySelector('.layui-table-fixed');
+            if (fixedLeft) {
+                let fixedW = 0;
+                const fixedThs = fixedLeft.querySelectorAll('.layui-table-header thead th');
+                for (let i = 0; i < fixedThs.length; i++) {
+                    fixedW += colsWidths[i] || 0;
+                    fixedThs[i].style.width = (colsWidths[i] || 0) + 'px';
+                }
+            }
+        } else {
+            tableView.classList.remove('auto-fit');
+        }
+    }
+
     function renderTable(cols, defaultLimit) {
+        // 动态计算表格可用高度，让表格在卡片内部滚动而非浏览器滚动
+        const cardBody = document.querySelector('.layui-card-body');
+        const header = document.querySelector('.report-header');
+        const form = document.getElementById('filterForm');
+        const usedHeight = (header ? header.offsetHeight : 0)
+            + (form ? form.offsetHeight : 0)
+            + 32; // card-body padding
+        const tableHeight = Math.max(300, cardBody.clientHeight - usedHeight);
+
         table.render({
             elem: '#reportTable',
             url: '/backend/api/report/data',
@@ -222,6 +856,7 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
             where: Object.assign({ code: reportCode }, getFormParams()),
             page: true,
             limit: defaultLimit || 20,
+            height: tableHeight,
             cols: [[
                 { type: 'numbers', title: '序号', width: 70 },
                 ...cols.map(c => ({
@@ -244,6 +879,7 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
                 }
             }))
             ]],
+            done: function(res) { autoFitColumns(); },
         });
     }
 
@@ -389,6 +1025,24 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
     });
 
     init();
+
+    // 窗口大小变化时重新计算表格高度
+    let resizeTimer;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () {
+            const cardBody = document.querySelector('.layui-card-body');
+            const header = document.querySelector('.report-header');
+            const form = document.getElementById('filterForm');
+            const usedHeight = (header ? header.offsetHeight : 0)
+                + (form ? form.offsetHeight : 0)
+                + 32;
+            const tableHeight = Math.max(300, cardBody.clientHeight - usedHeight);
+            table.resize('reportTable', { height: tableHeight });
+            // 窗口大小变化后重新计算列宽自适应
+            setTimeout(autoFitColumns, 100);
+        }, 200);
+    });
 });
 
 // 管理 select 下拉层级：打开的 select 所在的 filter-item 提升到最高
@@ -434,6 +1088,124 @@ function initSelectStackingObserver() {
 }
 // 首次初始化（已有的 select）
 initSelectStackingObserver();
+
+// ========== 用户菜单逻辑 ==========
+(function() {
+    var avatarBtn = document.getElementById('userAvatarBtn');
+    var dropdown = document.getElementById('userDropdown');
+    var mask = document.getElementById('userMenuMask');
+
+    function toggleMenu() {
+        var isOpen = dropdown.classList.contains('open');
+        if (isOpen) closeMenu(); else openMenu();
+    }
+    function openMenu() {
+        dropdown.classList.add('open');
+        mask.classList.add('show');
+    }
+    function closeMenu() {
+        dropdown.classList.remove('open');
+        mask.classList.remove('show');
+    }
+
+    avatarBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleMenu();
+    });
+    mask.addEventListener('click', closeMenu);
+    document.addEventListener('click', function(e) {
+        if (!document.getElementById('userMenuWrap').contains(e.target)) closeMenu();
+    });
+
+    // 加载用户信息
+    fetch('/backend/api/userInfo')
+        .then(function(r) { return r.json(); })
+        .then(function(json) {
+            if (json.code === 0 && json.data) {
+                var d = json.data;
+                var initial = (d.realname || d.username || 'U').charAt(0).toUpperCase();
+                document.getElementById('avatarInitial').textContent = initial;
+                document.getElementById('udAvatar').textContent = initial;
+                document.getElementById('udRealname').textContent = d.realname || d.username;
+                document.getElementById('udUsername').textContent = '@' + d.username;
+            }
+        })
+        .catch(function() {});
+
+    // 修改密码弹窗
+    var pwdOverlay = document.getElementById('pwdModalOverlay');
+
+    document.getElementById('btnChangePwd').addEventListener('click', function() {
+        closeMenu();
+        pwdOverlay.classList.add('show');
+        document.getElementById('pwdOld').value = '';
+        document.getElementById('pwdNew').value = '';
+        document.getElementById('pwdConfirm').value = '';
+    });
+    document.getElementById('pwdModalClose').addEventListener('click', function() {
+        pwdOverlay.classList.remove('show');
+    });
+    document.getElementById('pwdCancelBtn').addEventListener('click', function() {
+        pwdOverlay.classList.remove('show');
+    });
+    pwdOverlay.addEventListener('click', function(e) {
+        if (e.target === pwdOverlay) pwdOverlay.classList.remove('show');
+    });
+
+    document.getElementById('pwdSubmitBtn').addEventListener('click', function() {
+        var oldPwd = document.getElementById('pwdOld').value.trim();
+        var newPwd = document.getElementById('pwdNew').value.trim();
+        var confirmPwd = document.getElementById('pwdConfirm').value.trim();
+        var btn = this;
+
+        if (!oldPwd) { alert('请输入当前密码'); return; }
+        if (!newPwd || newPwd.length < 6) { alert('新密码不能少于6位'); return; }
+        if (newPwd !== confirmPwd) { alert('两次输入的新密码不一致'); return; }
+
+        btn.disabled = true;
+        btn.textContent = '提交中...';
+
+        var fd = new FormData();
+        fd.append('old_password', oldPwd);
+        fd.append('new_password', newPwd);
+
+        fetch('/backend/api/changePassword', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                btn.disabled = false;
+                btn.textContent = '确认修改';
+                if (json.code === 0) {
+                    alert(json.msg);
+                    pwdOverlay.classList.remove('show');
+                    window.location.href = '/backend/login';
+                } else {
+                    alert(json.msg || '修改失败');
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.textContent = '确认修改';
+                alert('网络错误，请重试');
+            });
+    });
+
+    // 退出登录确认
+    var logoutOverlay = document.getElementById('logoutConfirmOverlay');
+
+    document.getElementById('btnLogout').addEventListener('click', function() {
+        closeMenu();
+        logoutOverlay.classList.add('show');
+    });
+    document.getElementById('logoutCancelBtn').addEventListener('click', function() {
+        logoutOverlay.classList.remove('show');
+    });
+    logoutOverlay.addEventListener('click', function(e) {
+        if (e.target === logoutOverlay) logoutOverlay.classList.remove('show');
+    });
+    document.getElementById('logoutConfirmBtn').addEventListener('click', function() {
+        window.location.href = '/backend/logout';
+    });
+})();
 </script>
 </body>
 </html>

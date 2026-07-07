@@ -59,4 +59,53 @@ class Login extends BaseController
 
         return redirect('/backend/login');
     }
+
+    public function userInfo()
+    {
+        if (!Session::has('admin_id')) {
+            return json(['code' => -1, 'msg' => '未登录']);
+        }
+        return json(['code' => 0, 'data' => [
+            'id'        => Session::get('admin_id'),
+            'username'  => Session::get('admin_username'),
+            'realname'  => Session::get('admin_realname'),
+            'avatar'    => Session::get('admin_avatar'),
+        ]]);
+    }
+
+    public function changePassword()
+    {
+        if (!Session::has('admin_id')) {
+            return json(['code' => -1, 'msg' => '未登录']);
+        }
+
+        $oldPwd = (string)$this->request->post('old_password', '');
+        $newPwd = (string)$this->request->post('new_password', '');
+
+        if (empty($oldPwd) || empty($newPwd)) {
+            return json(['code' => -1, 'msg' => '旧密码和新密码不能为空']);
+        }
+
+        if (strlen($newPwd) < 6) {
+            return json(['code' => -1, 'msg' => '新密码长度不能少于6位']);
+        }
+
+        $admin = Db::name('fun_admin')
+            ->where('id', Session::get('admin_id'))
+            ->find();
+
+        if (!$admin) {
+            return json(['code' => -1, 'msg' => '用户不存在']);
+        }
+
+        if (!password_verify($oldPwd, $admin['password'])) {
+            return json(['code' => -1, 'msg' => '旧密码不正确']);
+        }
+
+        Db::name('fun_admin')
+            ->where('id', $admin['id'])
+            ->update(['password' => password_hash($newPwd, PASSWORD_DEFAULT)]);
+
+        return json(['code' => 0, 'msg' => '密码修改成功，请重新登录']);
+    }
 }

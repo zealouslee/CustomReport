@@ -83,7 +83,7 @@ class ReportApi extends Backend
             $rows = $svc->exportRows($code, $params, $max);
 
             $spreadsheet = new Spreadsheet();
-            $spreadsheet->getDefaultStyle()->getFont()->setName('宋体');
+            $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(11);
             $sheet = $spreadsheet->getActiveSheet();
 
             $cols = $cfg['cols'] ?? [];
@@ -103,12 +103,19 @@ class ReportApi extends Backend
                 $sheet->getStyle($dataArea)->getNumberFormat()->setFormatCode('@');
             }
 
-            // 表头样式
+            // 表头样式：蓝底白字、加粗、居中、细边框
             $headerStyle = [
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11, 'name' => 'Calibri'],
                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4472C4']],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+            ];
+
+            // 数据行样式：黑色字体、垂直居中、细边框
+            $dataStyle = [
+                'font' => ['bold' => false, 'color' => ['rgb' => '000000'], 'size' => 11, 'name' => 'Calibri'],
+                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
             ];
 
             // 写入表头
@@ -120,12 +127,12 @@ class ReportApi extends Backend
                 $sheet->getStyle($cell)->applyFromArray($headerStyle);
                 $colIndex++;
             }
-            $sheet->getRowDimension(1)->setRowHeight(30);
+            $sheet->getRowDimension(1)->setRowHeight(24);
 
             // 写入数据行
             foreach ($rows as $i => $row) {
                 $rowNum = $i + 2;
-                $sheet->getRowDimension($rowNum)->setRowHeight(22);
+                $sheet->getRowDimension($rowNum)->setRowHeight(20);
                 $colIndex = 1;
                 foreach ($cols as $c) {
                     $field = (string)($c['field'] ?? '');
@@ -135,15 +142,12 @@ class ReportApi extends Backend
                     $sheet->setCellValueExplicit($col . $rowNum, $val, DataType::TYPE_STRING);
                     $colIndex++;
                 }
-
             }
 
-            // 整表细线边框
+            // 批量设置数据行样式（比逐单元格设置更高效）
             if ($rowCount > 0) {
-                $allRange = 'A1:' . $lastCol . ($rowCount + 1);
-                $sheet->getStyle($allRange)->getBorders()->applyFromArray([
-                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
-                ]);
+                $dataRange = 'A2:' . $lastCol . ($rowCount + 1);
+                $sheet->getStyle($dataRange)->applyFromArray($dataStyle);
             }
 
             // 自动列宽

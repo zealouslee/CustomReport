@@ -5,6 +5,8 @@ use think\facade\Route;
 Route::get('login', 'Login/login');
 Route::post('doLogin', 'Login/doLogin');
 Route::get('logout', 'Login/logout');
+Route::get('api/userInfo', 'Login/userInfo');
+Route::post('api/changePassword', 'Login/changePassword');
 
 // 报表路由
 Route::get('report$', 'Report/list');

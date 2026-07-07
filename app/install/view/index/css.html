@@ -1,60 +1,138 @@
-<style>::-webkit-input-placeholder {
-    color: #ccc
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 30%, #0891b2 60%, #06b6d4 100%);
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* 背景装饰圆 */
+body::before {
+    content: '';
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    top: -200px;
+    right: -150px;
+    pointer-events: none;
+}
+body::after {
+    content: '';
+    position: fixed;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+    bottom: -150px;
+    left: -100px;
+    pointer-events: none;
+}
+
+/* 网格背景纹理 */
+.bg-pattern {
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.page-wrapper {
+    position: relative;
+    z-index: 1;
+    animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::-webkit-input-placeholder {
+    color: #a0afbe
 }
 
 ::-webkit-scrollbar {
     width: 5px !important;
     height: 6px !important;
-    background: #ffffff !important;
+    background: transparent !important;
     cursor: pointer !important
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: #9c9da0;
+    background-color: rgba(255,255,255,0.3);
     -webkit-border-radius: 2em;
     -moz-border-radius: 2em;
     border-radius: 2em
 }
 
 ::-webkit-scrollbar-track {
-    -webkit-box-shadow: inset 0 0 5px rgba(240, 240, 240, .5) !important;
+    -webkit-box-shadow: inset 0 0 5px rgba(0,0,0,0.1) !important;
     border-radius: 0 !important;
-    background: rgba(240, 240, 240, 0.5) !important;
+    background: transparent !important;
     cursor: pointer !important
-}
-.layui-elem-quote{
-    border-left: 5px solid #1e9fff!important;
-}
-.layui-btn-danger {
-    background-color: #f76d6d !important
-}
-
-.layui-red {
-    color: #f76d6d;
-    font-size: 18px
 }
 
 .layui-container {
     max-width: 1024px !important;
-    margin: 10px auto
+    margin: 20px auto;
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.25), 0 8px 20px rgba(0,0,0,0.1);
+    backdrop-filter: blur(20px);
+    padding: 30px 40px !important;
+    animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .layui-container .install-h1 {
     line-height: 60px;
-    color: #393D49;
+    color: #1e293b;
     font-size: 28px;
-    font-weight: 300;
-    text-align: center
+    font-weight: 700;
+    text-align: center;
 }
 
 .layui-elem-quote {
-    margin-bottom: 20px
+    border-left: 5px solid #0891b2 !important;
+    background: rgba(248,250,252,0.8);
+    border-radius: 10px;
+    margin-bottom: 20px;
 }
 
 .layui-elem-quote h1 {
     font-size: 24px;
-    font-weight: 300;
-    margin-bottom: 20px
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #1e293b;
+}
+
+.layui-elem-quote > p {
+    margin-bottom: 10px;
+    color: #334155;
+}
+
+.layui-elem-quote > p a {
+    color: #0891b2
+}
+
+.layui-elem-quote > p a:hover {
+    color: #0369a1
 }
 
 .btn-box {
@@ -62,23 +140,12 @@
     margin: 30px 0
 }
 
-.layui-elem-quote > p {
-    margin-bottom: 10px
-}
-
-.layui-elem-quote > p a {
-    color: #1e9fff
-}
-
-.layui-elem-quote > p a:hover {
-    color: #e86c6c
-}
-
 .protocol {
     width: 100%;
     height: 400px;
     padding: 10px 20px;
-    background-color: #fff;
+    background: rgba(255,255,255,0.9);
+    border-radius: 10px;
     overflow-y: scroll;
     box-sizing: border-box
 }
@@ -86,31 +153,32 @@
 .protocol h3 {
     text-align: center;
     font-size: 18px;
-    margin: 10px 0 15px
+    margin: 10px 0 15px;
+    color: #1e293b;
 }
 
 .protocol h4 {
     font-size: 16px;
     margin-top: 10px;
-    color: #333
+    color: #334155
 }
 
 .protocol p {
     line-height: 1.7;
-    color: #555
+    color: #334155
 }
 
 .protocol span {
     margin-top: 20px;
     display: block;
-    color: #999;
+    color: #94a3b8;
     font-size: 12px
 }
 
 input {
     -webkit-writing-mode: horizontal-tb !important;
     text-rendering: auto;
-    color: #7E96B3;
+    color: #334155;
     letter-spacing: normal;
     word-spacing: normal;
     text-transform: none;
@@ -119,21 +187,21 @@ input {
     display: inline-block;
     text-align: start;
     -webkit-appearance: textfield;
-    background-color: rgb(255, 255, 255);
+    background-color: #f8fafc;
     -webkit-rtl-ordering: logical;
     cursor: text;
     margin: 0em;
     font: 400 13.3333px Arial;
     padding: 1px 0px;
-    border-width: 2px;
-    border-style: inset;
-    border-color: rgb(118, 118, 118);
+    border-width: 1.5px;
+    border-style: solid;
+    border-color: #e2e8f0;
     border-image: initial;
-    border-radius: 2px
+    border-radius: 10px
 }
 
 input::-webkit-input-placeholder {
-    color: #aab2bd;
+    color: #a0afbe;
     font-size: 12px
 }
 
@@ -143,26 +211,29 @@ input::-webkit-input-placeholder {
 
 .layui-form-item input:focus {
     background: #fff;
-    color: #444;
+    color: #1e293b;
     outline: none;
-    border-color: #FF5722 !important
+    border-color: #0891b2 !important;
+    box-shadow: 0 0 0 3px rgba(8,145,178,0.1);
 }
 
 .layui-notice {
     text-align: center
 }
-#layui-success, .layui-success{
-    background: #1e9fff;
+
+#layui-success, .layui-success {
+    background: #0891b2;
     color: #fff;
     padding: 15px 20px;
-    border-radius: 4px;
+    border-radius: 10px;
     margin-bottom: 20px
 }
-#layui-error, .layui-error, , #layui-warmtips, .layui-warmtips {
-    background: #f76d6d;
+
+#layui-error, .layui-error {
+    background: #dc2626;
     color: #fff;
     padding: 15px 20px;
-    border-radius: 4px;
+    border-radius: 10px;
     margin-bottom: 20px
 }
 
@@ -171,20 +242,39 @@ input::-webkit-input-placeholder {
     text-decoration: underline
 }
 
-#layui-warmtips {
-    background: #ffcdcd;
+#layui-warmtips, .layui-warmtips {
+    background: #fef2f2;
     font-size: 14px;
-    color: #f76d6d
+    color: #dc2626;
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
 }
 
 #layui-warmtips a {
-    background: #ffffff7a;
+    background: rgba(220,38,38,0.1);
     display: block;
     height: 30px;
     line-height: 30px;
     margin-top: 10px;
-    color: #f76d6d;
-    border-radius: 3px
+    color: #dc2626;
+    border-radius: 6px
+}
+
+/* 表格样式适配 */
+.layui-table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.layui-table th {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    font-weight: 600;
+}
+
+.layui-table td {
+    color: #334155;
 }
 
 .submit {
@@ -192,17 +282,59 @@ input::-webkit-input-placeholder {
 }
 
 .footer {
-    text-align: center
+    text-align: center;
+    color: #94a3b8;
+}
+
+.footer h5, .footer h6 {
+    color: #94a3b8;
+}
+
+.footer a {
+    color: #0891b2;
+}
+
+/* 面板适配 */
+.layui-panel {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.layui-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.layui-field-title {
+    border-bottom-color: #e2e8f0 !important;
+}
+
+.layui-field-title legend {
+    color: #1e293b !important;
+    font-weight: 600;
+}
+
+.layui-form-label {
+    color: #334155;
 }
 
 @media screen and(max-width: 1024px) {
     .layui-container {
-        width: 100%
+        width: calc(100% - 20px);
+        margin: 10px;
+        border-radius: 16px;
+        padding: 20px !important;
     }
 }
 
 @media screen and(max-width: 768px) {
     .layui-container {
-        max-width: 100%
+        max-width: calc(100% - 20px);
+        margin: 10px;
+        border-radius: 16px;
+        padding: 16px !important;
     }
-}</style>
+}
+</style>

@@ -16,6 +16,8 @@
         color: #FF5722;
     }
 </style>
+<div class="bg-pattern"></div>
+<div class="page-wrapper">
 <div class="layui-container">
     <h1 class="install-h1">环境检测</h1>
     <?php if(is_file($config['lockFile'])):?>
@@ -278,6 +280,7 @@
         <a class="layui-btn layui-btn-normal next" href="javascript:;" data-href="/install.php/index/step3">下一步</a>
     </div>
 </div>
+</div><!-- /.page-wrapper -->
 <script>
     layui.use('layer', function(){
         var $ = layui.jquery, layer = layui.layer;

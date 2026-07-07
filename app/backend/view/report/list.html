@@ -6,64 +6,361 @@
     <title>报表列表</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/layui@2.9.21/dist/css/layui.css">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            padding: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 30%, #0891b2 60%, #06b6d4 100%);
+            position: relative;
+            overflow-x: hidden;
+            animation: fadeIn 0.4s ease;
+        }
+
+        /* 背景装饰圆 */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            top: -200px;
+            right: -150px;
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+            bottom: -150px;
+            left: -100px;
+            pointer-events: none;
+        }
+
+        /* 网格背景纹理 */
+        .bg-pattern {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(16px); }
             to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes fadeIn {
             from { opacity: 0; }
             to   { opacity: 1; }
         }
-        body {
-            padding: 24px; background: #f2f2f2;
-            animation: fadeIn 0.4s ease;
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; animation: fadeInUp 0.5s ease; }
-        .top-bar .sys-title { font-size:20px; font-weight:700; color:#0c4a6e; }
-        .top-bar .top-actions { display:flex; align-items:center; gap:12px; }
-        .top-bar .top-actions .user-info { font-size:13px; color:#888; }
+
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+
+        .top-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+        .top-bar .sys-title { font-size:20px; font-weight:700; color:#fff; }
+
+        /* ========== 可收起用户菜单 ========== */
+        .user-menu-wrap { position: relative; }
+        .user-avatar-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.5);
+            background: linear-gradient(135deg, #0ea, #06b6d4);
+            color: #fff; font-size: 18px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all .25s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .user-avatar-btn:hover {
+            transform: scale(1.08); border-color: #fff; box-shadow: 0 4px 16px rgba(6,182,212,0.5);
+        }
+        .user-avatar-btn .status-dot {
+            position: absolute; bottom: 1px; right: 1px; width: 10px; height: 10px;
+            background: #22c55e; border-radius: 50%; border: 2px solid #0c4a6e;
+        }
+
+        /* 下拉面板 */
+        .user-dropdown {
+            position: absolute; top: 52px; right: 0; width: 280px;
+            background: rgba(255,255,255,0.98); border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            opacity: 0; transform: translateY(-10px) scale(0.95);
+            pointer-events: none;
+            transition: opacity .25s cubic-bezier(0.22, 1, 0.36, 1), transform .25s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 9999;
+            overflow: hidden;
+        }
+        .user-dropdown.open {
+            opacity: 1; transform: translateY(0) scale(1); pointer-events: auto;
+        }
+
+        /* 面板头部 - 用户信息区 */
+        .ud-header {
+            background: linear-gradient(135deg, #0c4a6e, #0891b2);
+            padding: 20px; text-align: center; position: relative;
+        }
+        .ud-header::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent;
+            border-top: 8px solid #0891b2;
+        }
+        .ud-avatar {
+            width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 10px;
+            background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: #fff; font-weight: 700;
+        }
+        .ud-realname { font-size: 16px; font-weight: 600; color: #fff; }
+        .ud-username { font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+        .ud-online {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 6px;
+        }
+        .ud-online i { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; display: inline-block; }
+
+        /* 面板菜单项 */
+        .ud-menu { padding: 12px 8px; }
+        .ud-menu-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+            border-radius: 10px; cursor: pointer; transition: background .2s, transform .15s;
+            color: #334155; font-size: 14px;
+        }
+        .ud-menu-item:hover { background: #f0f9ff; transform: translateX(4px); }
+        .ud-menu-item .ud-icon {
+            width: 36px; height: 36px; border-radius: 10px; display: flex;
+            align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+        }
+        .ud-icon-pwd { background: #dbeafe; color: #2563eb; }
+        .ud-icon-logout { background: #fee2e2; color: #dc2626; }
+        .ud-menu-item .ud-label { font-weight: 500; }
+        .ud-menu-item .ud-desc { font-size: 11px; color: #94a3b8; }
+
+        /* 面板底部 */
+        .ud-footer {
+            padding: 12px 16px; border-top: 1px solid #f1f5f9;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 11px; color: #94a3b8;
+        }
+
+        /* 遮罩 */
+        .user-menu-mask {
+            position: fixed; inset: 0; z-index: 9998; display: none;
+        }
+        .user-menu-mask.show { display: block; }
+
+        /* ========== 弹窗样式 ========== */
+        .pwd-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999;
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .pwd-modal-overlay.show { display: flex; }
+        .pwd-modal {
+            background: #fff; border-radius: 16px; width: 400px; max-width: 90vw;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+            animation: modalIn .3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .pwd-modal-head {
+            padding: 20px 24px; border-bottom: 1px solid #f1f5f9;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .pwd-modal-head h3 { font-size: 16px; color: #1e293b; }
+        .pwd-modal-close {
+            width: 32px; height: 32px; border-radius: 8px; border: none; background: #f1f5f9;
+            cursor: pointer; font-size: 18px; color: #64748b; transition: all .2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pwd-modal-close:hover { background: #fee2e2; color: #dc2626; }
+        .pwd-modal-body { padding: 24px; }
+        .pwd-field { margin-bottom: 16px; }
+        .pwd-field label { display: block; font-size: 13px; font-weight: 500; color: #475569; margin-bottom: 6px; }
+        .pwd-field input {
+            width: 100%; height: 42px; border: 1px solid #e2e8f0; border-radius: 10px;
+            padding: 0 14px; font-size: 14px; transition: border-color .2s, box-shadow .2s;
+            outline: none;
+        }
+        .pwd-field input:focus { border-color: #0891b2; box-shadow: 0 0 0 3px rgba(8,145,178,0.15); }
+        .pwd-modal-foot {
+            padding: 16px 24px; border-top: 1px solid #f1f5f9;
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+        .pwd-btn {
+            padding: 10px 20px; border-radius: 10px; border: none; font-size: 14px;
+            font-weight: 500; cursor: pointer; transition: all .2s;
+        }
+        .pwd-btn-cancel { background: #f1f5f9; color: #475569; }
+        .pwd-btn-cancel:hover { background: #e2e8f0; }
+        .pwd-btn-submit { background: linear-gradient(135deg, #0891b2, #06b6d4); color: #fff; }
+        .pwd-btn-submit:hover { box-shadow: 0 4px 12px rgba(8,145,178,0.4); transform: translateY(-1px); }
+        .pwd-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* 退出确认弹窗 */
+        .logout-confirm-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99999;
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .logout-confirm-overlay.show { display: flex; }
+        .logout-confirm {
+            background: #fff; border-radius: 16px; width: 360px; max-width: 90vw;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.3); text-align: center;
+            animation: modalIn .3s cubic-bezier(0.22, 1, 0.36, 1);
+            padding: 32px 24px 24px;
+        }
+        .logout-confirm .lc-icon {
+            width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 16px;
+            background: #fef3c7; display: flex; align-items: center; justify-content: center;
+            font-size: 32px;
+        }
+        .logout-confirm h3 { font-size: 18px; color: #1e293b; margin-bottom: 8px; }
+        .logout-confirm p { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+        .logout-confirm .lc-btns { display: flex; gap: 10px; justify-content: center; }
+        .logout-confirm .lc-btn {
+            flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px;
+            font-weight: 500; cursor: pointer; transition: all .2s;
+        }
+        .lc-btn-cancel { background: #f1f5f9; color: #475569; }
+        .lc-btn-cancel:hover { background: #e2e8f0; }
+        .lc-btn-confirm { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
+        .lc-btn-confirm:hover { box-shadow: 0 4px 12px rgba(220,38,38,0.4); transform: translateY(-1px); }
         .page-title {
-            font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #333;
-            animation: fadeInUp 0.5s ease 0.1s both;
+            font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #fff;
+            animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
         }
         .report-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
         }
         .report-card {
-            background: #fff; border-radius: 8px; padding: 24px;
-            box-shadow: 0 1px 4px rgba(0,0,0,.08); cursor: pointer;
-            transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
-            border: 1px solid #eee;
-            animation: fadeInUp 0.45s ease both;
+            background: rgba(255,255,255,0.95); border-radius: 16px; padding: 24px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.08);
+            cursor: pointer;
+            backdrop-filter: blur(20px);
+            transition: box-shadow .3s cubic-bezier(0.22, 1, 0.36, 1), transform .3s cubic-bezier(0.22, 1, 0.36, 1), border-color .3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: cardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        .report-card:nth-child(1) { animation-delay: 0.05s; }
-        .report-card:nth-child(2) { animation-delay: 0.10s; }
-        .report-card:nth-child(3) { animation-delay: 0.15s; }
-        .report-card:nth-child(4) { animation-delay: 0.20s; }
-        .report-card:nth-child(5) { animation-delay: 0.25s; }
-        .report-card:nth-child(6) { animation-delay: 0.30s; }
-        .report-card:nth-child(7) { animation-delay: 0.35s; }
-        .report-card:nth-child(8) { animation-delay: 0.40s; }
-        .report-card:nth-child(9) { animation-delay: 0.45s; }
-        .report-card:nth-child(10){ animation-delay: 0.50s; }
+        .report-card:nth-child(1) { animation-delay: 0.06s; }
+        .report-card:nth-child(2) { animation-delay: 0.12s; }
+        .report-card:nth-child(3) { animation-delay: 0.18s; }
+        .report-card:nth-child(4) { animation-delay: 0.24s; }
+        .report-card:nth-child(5) { animation-delay: 0.30s; }
+        .report-card:nth-child(6) { animation-delay: 0.36s; }
+        .report-card:nth-child(7) { animation-delay: 0.42s; }
+        .report-card:nth-child(8) { animation-delay: 0.48s; }
+        .report-card:nth-child(9) { animation-delay: 0.54s; }
+        .report-card:nth-child(10){ animation-delay: 0.60s; }
         .report-card:hover {
-            box-shadow: 0 6px 20px rgba(0,0,0,.14); transform: translateY(-4px);
-            border-color: #5fb878;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.25), 0 12px 30px rgba(0,0,0,0.15); transform: translateY(-4px);
+            border-color: #0891b2;
         }
-        .report-card .name { font-size: 18px; font-weight: 500; color: #333; }
-        .report-card .code { font-size: 13px; color: #999; margin-top: 6px; }
+        .report-card .name { font-size: 18px; font-weight: 500; color: #1e293b; }
+        .report-card .code { font-size: 13px; color: #64748b; margin-top: 6px; }
         .report-card .arrow {
-            float: right; color: #5fb878; font-size: 24px; line-height: 1;
+            float: right; color: #0891b2; font-size: 24px; line-height: 1;
             transition: transform .25s ease;
         }
         .report-card:hover .arrow { transform: translateX(4px); }
     </style>
 </head>
 <body>
+<div class="bg-pattern"></div>
+<div class="page-wrapper">
     <div class="top-bar">
         <div class="sys-title">🏥 体检数据查询</div>
-        <div class="top-actions">
-            <a href="/backend/logout" class="layui-btn layui-btn-sm layui-btn-primary" onclick="return confirm('确定退出登录？')">退出登录</a>
+        <div class="user-menu-wrap" id="userMenuWrap">
+            <div class="user-avatar-btn" id="userAvatarBtn" title="用户菜单">
+                <span id="avatarInitial">A</span>
+                <span class="status-dot"></span>
+            </div>
+            <div class="user-dropdown" id="userDropdown">
+                <div class="ud-header">
+                    <div class="ud-avatar" id="udAvatar">A</div>
+                    <div class="ud-realname" id="udRealname">加载中...</div>
+                    <div class="ud-username" id="udUsername">@...</div>
+                    <div class="ud-online"><i></i> 在线</div>
+                </div>
+                <div class="ud-menu">
+                    <div class="ud-menu-item" id="btnChangePwd">
+                        <div class="ud-icon ud-icon-pwd">🔑</div>
+                        <div>
+                            <div class="ud-label">修改密码</div>
+                            <div class="ud-desc">定期修改密码保障账户安全</div>
+                        </div>
+                    </div>
+                    <div class="ud-menu-item" id="btnLogout">
+                        <div class="ud-icon ud-icon-logout">🚪</div>
+                        <div>
+                            <div class="ud-label">退出登录</div>
+                            <div class="ud-desc">安全退出当前账号</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ud-footer">
+                    <span>体检数据查询系统</span>
+                    <span>v1.0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="user-menu-mask" id="userMenuMask"></div>
+
+    <!-- 修改密码弹窗 -->
+    <div class="pwd-modal-overlay" id="pwdModalOverlay">
+        <div class="pwd-modal">
+            <div class="pwd-modal-head">
+                <h3>🔑 修改密码</h3>
+                <button class="pwd-modal-close" id="pwdModalClose">✕</button>
+            </div>
+            <div class="pwd-modal-body">
+                <div class="pwd-field">
+                    <label>当前密码</label>
+                    <input type="password" id="pwdOld" placeholder="请输入当前密码" autocomplete="current-password">
+                </div>
+                <div class="pwd-field">
+                    <label>新密码</label>
+                    <input type="password" id="pwdNew" placeholder="请输入新密码（至少6位）" autocomplete="new-password">
+                </div>
+                <div class="pwd-field">
+                    <label>确认新密码</label>
+                    <input type="password" id="pwdConfirm" placeholder="请再次输入新密码" autocomplete="new-password">
+                </div>
+            </div>
+            <div class="pwd-modal-foot">
+                <button class="pwd-btn pwd-btn-cancel" id="pwdCancelBtn">取消</button>
+                <button class="pwd-btn pwd-btn-submit" id="pwdSubmitBtn">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 退出确认弹窗 -->
+    <div class="logout-confirm-overlay" id="logoutConfirmOverlay">
+        <div class="logout-confirm">
+            <div class="lc-icon">👋</div>
+            <h3>确定退出登录？</h3>
+            <p>退出后需要重新登录才能访问系统</p>
+            <div class="lc-btns">
+                <button class="lc-btn lc-btn-cancel" id="logoutCancelBtn">取消</button>
+                <button class="lc-btn lc-btn-confirm" id="logoutConfirmBtn">确定退出</button>
+            </div>
         </div>
     </div>
     <div class="page-title">报表列表</div>
@@ -76,8 +373,130 @@
         </div>
         {/volist}
     </div>
-    <div style="margin-top: 24px; text-align: center; color: #999; font-size: 13px;">
+    <div style="margin-top: 24px; text-align: center; color: rgba(255,255,255,0.7); font-size: 13px;">
         共 {$reports|count} 个报表
     </div>
+</div>
+
+<script>
+(function() {
+    // ========== 用户菜单逻辑 ==========
+    const avatarBtn = document.getElementById('userAvatarBtn');
+    const dropdown = document.getElementById('userDropdown');
+    const mask = document.getElementById('userMenuMask');
+
+    function toggleMenu() {
+        const isOpen = dropdown.classList.contains('open');
+        if (isOpen) closeMenu(); else openMenu();
+    }
+    function openMenu() {
+        dropdown.classList.add('open');
+        mask.classList.add('show');
+    }
+    function closeMenu() {
+        dropdown.classList.remove('open');
+        mask.classList.remove('show');
+    }
+
+    avatarBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleMenu();
+    });
+    mask.addEventListener('click', closeMenu);
+    document.addEventListener('click', function(e) {
+        if (!document.getElementById('userMenuWrap').contains(e.target)) closeMenu();
+    });
+
+    // 加载用户信息
+    fetch('/backend/api/userInfo')
+        .then(r => r.json())
+        .then(json => {
+            if (json.code === 0 && json.data) {
+                const d = json.data;
+                const initial = (d.realname || d.username || 'U').charAt(0).toUpperCase();
+                document.getElementById('avatarInitial').textContent = initial;
+                document.getElementById('udAvatar').textContent = initial;
+                document.getElementById('udRealname').textContent = d.realname || d.username;
+                document.getElementById('udUsername').textContent = '@' + d.username;
+            }
+        })
+        .catch(() => {});
+
+    // ========== 修改密码弹窗 ==========
+    const pwdOverlay = document.getElementById('pwdModalOverlay');
+
+    document.getElementById('btnChangePwd').addEventListener('click', function() {
+        closeMenu();
+        pwdOverlay.classList.add('show');
+        document.getElementById('pwdOld').value = '';
+        document.getElementById('pwdNew').value = '';
+        document.getElementById('pwdConfirm').value = '';
+    });
+
+    document.getElementById('pwdModalClose').addEventListener('click', function() {
+        pwdOverlay.classList.remove('show');
+    });
+    document.getElementById('pwdCancelBtn').addEventListener('click', function() {
+        pwdOverlay.classList.remove('show');
+    });
+    pwdOverlay.addEventListener('click', function(e) {
+        if (e.target === pwdOverlay) pwdOverlay.classList.remove('show');
+    });
+
+    document.getElementById('pwdSubmitBtn').addEventListener('click', function() {
+        const oldPwd = document.getElementById('pwdOld').value.trim();
+        const newPwd = document.getElementById('pwdNew').value.trim();
+        const confirmPwd = document.getElementById('pwdConfirm').value.trim();
+        const btn = this;
+
+        if (!oldPwd) { alert('请输入当前密码'); return; }
+        if (!newPwd || newPwd.length < 6) { alert('新密码不能少于6位'); return; }
+        if (newPwd !== confirmPwd) { alert('两次输入的新密码不一致'); return; }
+
+        btn.disabled = true;
+        btn.textContent = '提交中...';
+
+        const fd = new FormData();
+        fd.append('old_password', oldPwd);
+        fd.append('new_password', newPwd);
+
+        fetch('/backend/api/changePassword', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(json => {
+                btn.disabled = false;
+                btn.textContent = '确认修改';
+                if (json.code === 0) {
+                    alert(json.msg);
+                    pwdOverlay.classList.remove('show');
+                    window.location.href = '/backend/login';
+                } else {
+                    alert(json.msg || '修改失败');
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.textContent = '确认修改';
+                alert('网络错误，请重试');
+            });
+    });
+
+    // ========== 退出登录确认 ==========
+    const logoutOverlay = document.getElementById('logoutConfirmOverlay');
+
+    document.getElementById('btnLogout').addEventListener('click', function() {
+        closeMenu();
+        logoutOverlay.classList.add('show');
+    });
+    document.getElementById('logoutCancelBtn').addEventListener('click', function() {
+        logoutOverlay.classList.remove('show');
+    });
+    logoutOverlay.addEventListener('click', function(e) {
+        if (e.target === logoutOverlay) logoutOverlay.classList.remove('show');
+    });
+    document.getElementById('logoutConfirmBtn').addEventListener('click', function() {
+        window.location.href = '/backend/logout';
+    });
+})();
+</script>
 </body>
 </html>

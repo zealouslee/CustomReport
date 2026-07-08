@@ -279,6 +279,27 @@
             transition: transform .25s ease;
         }
         .report-card:hover .arrow { transform: translateX(4px); }
+
+        /* 收藏星标 */
+        .fav-star {
+            position: absolute; top: 14px; right: 52px;
+            font-size: 22px; color: #cbd5e1; cursor: pointer;
+            transition: color .2s, transform .15s; z-index: 2;
+            line-height: 1;
+        }
+        .fav-star:hover { transform: scale(1.2); }
+        .fav-star.is-fav { color: #f59e0b; }
+
+        /* 卡片需要 relative 定位以支持星标绝对定位 */
+        .report-card { position: relative; }
+
+        /* 分类标题 */
+        .category-title {
+            font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin: 20px 0 12px 4px;
+            animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
     </style>
 </head>
 <body>
@@ -364,9 +385,10 @@
         </div>
     </div>
     <div class="page-title">报表列表</div>
-    <div class="report-grid">
+    <div class="report-grid" id="reportGrid">
         {volist name="reports" id="vo"}
-        <div class="report-card" onclick="window.location.href='/backend/report/{$vo.code}'">
+        <div class="report-card" data-code="{$vo.code|htmlspecialchars}" onclick="window.location.href='/backend/report/{$vo.code}'">
+            <span class="fav-star" data-code="{$vo.code|htmlspecialchars}" onclick="event.stopPropagation();toggleFav(this)">☆</span>
             <span class="arrow">&rarr;</span>
             <div class="name">{$vo.name|htmlspecialchars}</div>
             <div class="code">{$vo.code|htmlspecialchars}</div>
@@ -503,6 +525,61 @@
             .then(() => { window.location.href = '/backend/login'; })
             .catch(() => { window.location.href = '/backend/login'; });
     });
+
+    // ========== 报表收藏功能 ==========
+    function getFavs() {
+        try { return JSON.parse(localStorage.getItem('report_favs') || '[]'); } catch(e) { return []; }
+    }
+    function setFavs(favs) {
+        localStorage.setItem('report_favs', JSON.stringify(favs));
+    }
+
+    // 初始化星标状态
+    const favs = getFavs();
+    document.querySelectorAll('.fav-star').forEach(star => {
+        if (favs.includes(star.dataset.code)) {
+            star.classList.add('is-fav');
+            star.textContent = '★';
+        }
+    });
+
+    // 收藏排序：将收藏的卡片移到最前
+    const grid = document.getElementById('reportGrid');
+    if (grid) {
+        const cards = Array.from(grid.querySelectorAll('.report-card'));
+        cards.sort((a, b) => {
+            const aFav = favs.includes(a.dataset.code) ? 0 : 1;
+            const bFav = favs.includes(b.dataset.code) ? 0 : 1;
+            return aFav - bFav;
+        });
+        cards.forEach(c => grid.appendChild(c));
+    }
+
+    // 切换收藏
+    window.toggleFav = function(starEl) {
+        const code = starEl.dataset.code;
+        let favs = getFavs();
+        const idx = favs.indexOf(code);
+        if (idx > -1) {
+            favs.splice(idx, 1);
+            starEl.classList.remove('is-fav');
+            starEl.textContent = '☆';
+        } else {
+            favs.push(code);
+            starEl.classList.add('is-fav');
+            starEl.textContent = '★';
+        }
+        setFavs(favs);
+        // 重新排序
+        const grid = document.getElementById('reportGrid');
+        const cards = Array.from(grid.querySelectorAll('.report-card'));
+        cards.sort((a, b) => {
+            const aFav = favs.includes(a.dataset.code) ? 0 : 1;
+            const bFav = favs.includes(b.dataset.code) ? 0 : 1;
+            return aFav - bFav;
+        });
+        cards.forEach(c => grid.appendChild(c));
+    };
 })();
 </script>
 </body>

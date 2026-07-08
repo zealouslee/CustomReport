@@ -5,13 +5,6 @@ namespace app\backend\controller;
 
 use app\backend\service\ReportService;
 use app\common\controller\Backend;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ReportApi extends Backend
 {
@@ -68,8 +61,7 @@ class ReportApi extends Backend
     public function export()
     {
         try {
-                $originalMemory = ini_get('memory_limit');
-                ini_set('memory_limit', '512M');
+            set_time_limit(300);
 
             $code = (string)request()->get('code', '');
             $params = request()->get();
@@ -81,107 +73,94 @@ class ReportApi extends Backend
             $max = (int)($cfg['report']['max_export_rows'] ?? 50000);
             $rows = $svc->exportRows($code, $params, $max);
 
-            $spreadsheet = new Spreadsheet();
-            $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(11);
-            $sheet = $spreadsheet->getActiveSheet();
-
             $cols = $cfg['cols'] ?? [];
-            if (!$cols) {
-                // 没配置列时，按查询结果自动生成表头
-                $first = $rows[0] ?? [];
+            if (!$cols && !empty($rows)) {
+                $first = $rows[0];
                 $cols = array_map(fn($k) => ['field' => $k, 'title' => $k], array_keys($first));
             }
 
-            $colCount = count($cols);
-            $rowCount = count($rows);
-            $lastCol = Coordinate::stringFromColumnIndex($colCount);
+            $filename = ($cfg['report']['name'] ?? $code) . '_' . date('Ymd_His') . '.csv';
+            $tmpFile = runtime_path() . 'export_' . md5($filename . microtime(true)) . '.csv';
 
-            // 设置所有数据区域为文本格式，防止科学计数法
-            if ($rowCount > 0) {
-                $dataArea = 'A2:' . $lastCol . ($rowCount + 1);
-                $sheet->getStyle($dataArea)->getNumberFormat()->setFormatCode('@');
+            // 流式写入 CSV：内存只占一行，8000行毫无压力
+            $fp = fopen($tmpFile, 'w');
+            if (!$fp) {
+                throw new \RuntimeException('无法创建临时导出文件');
             }
-
-            // 表头样式：蓝底白字、加粗、居中、细边框
-            $headerStyle = [
-                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11, 'name' => 'Calibri'],
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4472C4']],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
-            ];
-
-            // 数据行样式：黑色字体、垂直居中、细边框
-            $dataStyle = [
-                'font' => ['bold' => false, 'color' => ['rgb' => '000000'], 'size' => 11, 'name' => 'Calibri'],
-                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
-                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
-            ];
-
-            // 写入表头
-            $colIndex = 1;
-            foreach ($cols as $c) {
-                $col = Coordinate::stringFromColumnIndex($colIndex);
-                $cell = $col . '1';
-                $sheet->setCellValue($cell, (string)($c['title'] ?? $c['field'] ?? ''));
-                $sheet->getStyle($cell)->applyFromArray($headerStyle);
-                $colIndex++;
-            }
-            $sheet->getRowDimension(1)->setRowHeight(24);
-
-            // 写入数据行
-            foreach ($rows as $i => $row) {
-                $rowNum = $i + 2;
-                $sheet->getRowDimension($rowNum)->setRowHeight(20);
-                $colIndex = 1;
+            // UTF-8 BOM：让 Excel 正确识别中文
+            fwrite($fp, "\xEF\xBB\xBF");
+            // 表头
+            fputcsv($fp, array_map(fn($c) => (string)($c['title'] ?? $c['field'] ?? ''), $cols));
+            // 数据行
+            foreach ($rows as $row) {
+                $line = [];
                 foreach ($cols as $c) {
                     $field = (string)($c['field'] ?? '');
-                    $col = Coordinate::stringFromColumnIndex($colIndex);
                     $val = $row[$field] ?? '';
-                    // 用显式字符串写入，避免 Excel 将长数字转为科学计数法
-                    $sheet->setCellValueExplicit($col . $rowNum, $val, DataType::TYPE_STRING);
-                    $colIndex++;
+                    $strVal = $this->formatCellValue($val);
+                    // 长数字串用 ="value" 包裹，防止 Excel 转科学计数法
+                    if (preg_match('/^\d{11,}$/', $strVal)) {
+                        $strVal = '="' . str_replace('"', '""', $strVal) . '"';
+                    }
+                    $line[] = $strVal;
                 }
+                fputcsv($fp, $line);
             }
+            fclose($fp);
 
-            // 批量设置数据行样式（比逐单元格设置更高效）
-            if ($rowCount > 0) {
-                $dataRange = 'A2:' . $lastCol . ($rowCount + 1);
-                $sheet->getStyle($dataRange)->applyFromArray($dataStyle);
-            }
-
-            // 自动列宽
-            foreach (range('A', $lastCol) as $colID) {
-                $sheet->getColumnDimension($colID)->setAutoSize(true);
-            }
-
-            // 冻结首行
-            $sheet->freezePane('A2');
-
-            $filename = ($cfg['report']['name'] ?? $code) . '_' . date('Ymd_His') . '.xlsx';
-            $tmp = runtime_path() . 'report_export_' . md5($filename . microtime(true)) . '.xlsx';
-            try {
-                (new Xlsx($spreadsheet))->save($tmp);
-
-                if (!file_exists($tmp)) {
-                    throw new \RuntimeException('导出文件生成失败');
+            // 发送文件后清理
+            register_shutdown_function(function () use ($tmpFile) {
+                if (file_exists($tmpFile)) {
+                    @unlink($tmpFile);
                 }
+            });
 
-                $content = file_get_contents($tmp);
+            // 手动设置 RFC 5987 编码的 Content-Disposition，解决中文文件名乱码
+            $encodedName = rawurlencode($filename);
+            $disposition = 'attachment; filename="' . $encodedName . '"; filename*=UTF-8\'\'' . $encodedName;
 
-                return response($content, 200, [
-                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    'Content-Disposition' => 'attachment; filename="' . rawurlencode($filename) . '"',
-                ]);
-            } finally {
-                // 恢复内存限制
-                ini_set('memory_limit', $originalMemory);
-                if (file_exists($tmp)) {
-                    unlink($tmp);
-                }
-            }
+            return response(file_get_contents($tmpFile), 200, [
+                'Content-Type'              => 'text/csv; charset=utf-8',
+                'Content-Disposition'       => $disposition,
+                'Content-Transfer-Encoding' => 'binary',
+                'Content-Length'            => (string)filesize($tmpFile),
+            ]);
         } catch (\Throwable $e) {
-            return json(['code' => -1, 'msg' => '导出失败']);
+            \think\facade\Log::error('导出失败: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return json(['code' => -1, 'msg' => '导出失败: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * 格式化单元格值：DateTime 对象 / Unix 时间戳 → 可读日期字符串
+     */
+    private function formatCellValue($val): string
+    {
+        // sqlsrv 驱动返回 DateTime 对象
+        if ($val instanceof \DateTimeInterface) {
+            return $val->format('Y-m-d H:i:s');
+        }
+
+        $str = (string)$val;
+
+        // Unix 时间戳（10位秒级 / 13位毫秒级）
+        if (preg_match('/^\d{10}(\d{3})?$/', $str)) {
+            $ts = (int)$str;
+            if ($ts > 9999999999) {
+                $ts = (int)($ts / 1000); // 毫秒→秒
+            }
+            // 仅转换合理范围内的时间戳（2000-2050年）
+            if ($ts >= 946684800 && $ts <= 2524608000) {
+                return date('Y-m-d H:i:s', $ts);
+            }
+        }
+
+        // SQL Server datetime 带微秒 "2026-07-08 12:30:00.0000000" → 截断
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$/', $str)) {
+            return substr($str, 0, 19);
+        }
+
+        return $str;
     }
 }
 

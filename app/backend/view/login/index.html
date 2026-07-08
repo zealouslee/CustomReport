@@ -418,6 +418,11 @@ layui.use(['form', 'jquery'], function () {
     })();
 
     form.on('submit(doLogin)', function (data) {
+        var loginBtn = document.querySelector('.login-btn');
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登录中...';
+        loginBtn.style.opacity = '0.7';
+
         $.ajax({
             type: 'POST',
             url: '/backend/doLogin',
@@ -425,6 +430,7 @@ layui.use(['form', 'jquery'], function () {
             dataType: 'json',
             success: function (res) {
                 if (res.code === 0) {
+                    loginBtn.textContent = '登录成功';
                     // 仅记住用户名，不存储密码
                     if ($remember.is(':checked')) {
                         localStorage.setItem('login_remember', JSON.stringify({
@@ -435,11 +441,17 @@ layui.use(['form', 'jquery'], function () {
                     }
                     window.location.href = '/backend/report';
                 } else {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '登 录';
+                    loginBtn.style.opacity = '1';
                     errBox.style.display = 'block';
                     errBox.textContent = res.msg || '登录失败';
                 }
             },
             error: function () {
+                loginBtn.disabled = false;
+                loginBtn.textContent = '登 录';
+                loginBtn.style.opacity = '1';
                 errBox.style.display = 'block';
                 errBox.textContent = '网络错误，请稍后重试';
             }

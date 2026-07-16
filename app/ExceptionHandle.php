@@ -50,18 +50,17 @@ class ExceptionHandle extends Handle
      */
     public function render($request, Throwable $e): Response
     {
-        // API 请求统一返回 JSON
-        if ($request->isAjax() || str_contains($request->pathinfo(), 'api/')) {
-            $msg = $e->getMessage();
-            if ($e instanceof HttpException) {
-                $code = $e->getStatusCode();
-            } else {
-                $code = 500;
-            }
-            return json(['code' => -1, 'msg' => $msg], $code);
+        // 统一返回 JSON 格式错误
+        $msg = $e->getMessage();
+
+        if ($e instanceof HttpException) {
+            $statusCode = $e->getStatusCode();
+        } elseif ($e instanceof ValidateException) {
+            $statusCode = 422;
+        } else {
+            $statusCode = 500;
         }
 
-        // 其他错误交给系统处理
-        return parent::render($request, $e);
+        return json(['code' => -1, 'msg' => $msg], $statusCode);
     }
 }

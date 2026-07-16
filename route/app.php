@@ -14,6 +14,7 @@ Route::get('think', function () {
     return 'hello,ThinkPHP6!';
 });
 
+Route::get('index', 'index/hello');
 Route::get('hello/:name', 'index/hello');
 
 // 报表页面（前台入口）：/report/:code

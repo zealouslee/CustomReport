@@ -62,15 +62,15 @@ return [
         'sqlsrv' => [
             // 数据库类型
             'type'            => 'sqlsrv',
-            // 服务器地址
+//            // 服务器地址
             'hostname'        => '127.0.0.1',
-            // 数据库名
+//            // 数据库名
             'database'        => 'DDPeis',
-            // 用户名
+//            // 用户名
             'username'        => 'sa',
-            // 密码
+//            // 密码
             'password'        => '123',
-            // 端口
+//            // 端口
             'hostport'        => '1433',
             // 数据库连接参数
             'params'          => [],

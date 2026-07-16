@@ -338,14 +338,20 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            max-width: 100% !important;
+            width: 100% !important;
         }
         .layui-table-view .layui-table-body {
             flex: 1;
             min-height: 0;
-            overflow-y: auto !important;
+            overflow: auto !important;
+            max-width: 100%;
         }
         .layui-table-page {
             flex-shrink: 0;
+        }
+        .layui-table-header {
+            overflow: hidden !important;
         }
         .layui-form-item,
         .layui-input-block { overflow: visible !important; }
@@ -554,7 +560,7 @@
             background: #e8f4f8 !important;
         }
 
-        /* 表格密度切换 */
+        /* 表格高度切换 */
         .density-wrap { position: relative; display: inline-block; }
         .density-panel {
             position: absolute; top: 40px; right: 0; width: 120px;
@@ -833,66 +839,6 @@
             flex-shrink: 0;
         }
 
-        /* 打印样式：只打印表格区域 */
-        @media print {
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            html, body {
-                background: #fff !important; padding: 0 !important; margin: 0 !important;
-                height: auto !important; overflow: visible !important;
-            }
-            body::before, body::after, .bg-pattern { display: none !important; }
-
-            .page-wrapper {
-                height: auto !important; overflow: visible !important;
-                display: block !important;
-            }
-            .layui-card {
-                box-shadow: none !important; border: none !important;
-                background: #fff !important; backdrop-filter: none !important;
-                overflow: visible !important; display: block !important;
-                height: auto !important; min-height: 0 !important;
-            }
-            .layui-card-body {
-                overflow: visible !important; display: block !important;
-                height: auto !important; flex: none !important;
-                min-height: 0 !important; padding: 0 !important;
-            }
-            .report-header {
-                page-break-after: avoid; margin-bottom: 8px !important;
-            }
-            /* 隐藏非表格区域 */
-            #filterForm, .active-filters,
-            .user-menu-wrap, .user-menu-mask,
-            .pwd-modal-overlay, .logout-confirm-overlay,
-            .drawer-overlay, .row-drawer,
-            .col-toggle-panel, .density-panel,
-            .table-loading-overlay, .summary-row { display: none !important; }
-
-            .layui-table-view {
-                overflow: visible !important; height: auto !important;
-                display: block !important; min-height: 0 !important;
-                border: none !important;
-            }
-            .layui-table-body {
-                overflow: visible !important; height: auto !important;
-                max-height: none !important; min-height: 0 !important;
-            }
-            .layui-table-body table {
-                width: 100% !important;
-            }
-            /* 隐藏 layui 固定列覆盖层（防止重复显示） */
-            .layui-table-fixed, .layui-table-fixed-l, .layui-table-fixed-r {
-                display: none !important;
-            }
-            .layui-table-header {
-                overflow: visible !important;
-            }
-            .layui-table-page { display: none !important; }
-            /* 表头在每页顶部重复显示 */
-            .layui-table-header thead { display: table-header-group !important; }
-            /* 避免行被分页切断 */
-            .layui-table-body tr { page-break-inside: avoid !important; }
-        }
     </style>
 </head>
 <body>
@@ -994,7 +940,7 @@
                     <div class="col-toggle-panel" id="colTogglePanel"></div>
                 </div>
                 <div class="density-wrap">
-                    <button type="button" class="layui-btn layui-btn-primary" id="btnDensity">密度</button>
+                    <button type="button" class="layui-btn layui-btn-primary" id="btnDensity">高度</button>
                     <div class="density-panel" id="densityPanel">
                         <div class="density-opt" data-mode="compact"><span class="density-dot"></span>紧凑</div>
                         <div class="density-opt" data-mode="normal"><span class="density-dot"></span>标准</div>
@@ -1002,7 +948,6 @@
                     </div>
                 </div>
                 <button type="button" class="layui-btn layui-btn-normal" id="btnExport">导出Excel</button>
-                <button type="button" class="layui-btn layui-btn-primary" id="btnPrint">打印</button>
                 <span class="query-info" id="queryInfo"></span>
             </div>
         </form>
@@ -1092,7 +1037,7 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
         if (el) el.remove();
     }
 
-    // 表格密度管理
+    // 表格高度管理
     let tableDensity = localStorage.getItem('table_density') || 'normal';
     function densityToSize(mode) {
         // 映射到 layui table size 参数
@@ -1454,6 +1399,18 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
             }
         } else {
             tableView.classList.remove('auto-fit');
+            // 内容超出容器时，给内部 table 设置显式宽度以触发水平滚动
+            const headerTable = tableView.querySelector('.layui-table-header table');
+            const bodyTable = tableView.querySelector('.layui-table-body table');
+            const totalW = totalContentWidth + 'px';
+            if (headerTable) {
+                headerTable.style.width = totalW;
+                headerTable.style.minWidth = totalW;
+            }
+            if (bodyTable) {
+                bodyTable.style.width = totalW;
+                bodyTable.style.minWidth = totalW;
+            }
         }
     }
 
@@ -1702,6 +1659,14 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
             }))
             ]],
             done: function(res) {
+                // 确保 table-body 可水平滚动
+                var tvFix = document.querySelector('.layui-table-view[lay-id="reportTable"]');
+                if (tvFix) {
+                    var bodyFix = tvFix.querySelector('.layui-table-body');
+                    if (bodyFix) {
+                        bodyFix.style.overflowX = 'auto';
+                    }
+                }
                 // 显示查询耗时
                 const elapsed = queryStartTime ? Date.now() - queryStartTime : 0;
                 const infoEl = document.getElementById('queryInfo');
@@ -1948,7 +1913,7 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
         });
     });
 
-    // 密度切换
+    // 高度切换
     document.getElementById('btnDensity').addEventListener('click', function(e) {
         e.stopPropagation();
         document.getElementById('densityPanel').classList.toggle('show');
@@ -1966,7 +1931,7 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
             document.getElementById('densityPanel').classList.remove('show');
         }
     });
-    // 初始化密度
+    // 初始化高度
     applyDensity(tableDensity);
 
     // 导出按钮：加 loading 状态
@@ -2013,37 +1978,6 @@ layui.use(['form', 'table', 'laydate', 'layer'], function () {
             });
     });
 
-    // 打印按钮
-    document.getElementById('btnPrint').addEventListener('click', function() {
-        window.print();
-    });
-
-    // 打印前移除 layui inline 高度限制，打印后恢复
-    window.addEventListener('beforeprint', function() {
-        var tv = document.querySelector('.layui-table-view[lay-id="reportTable"]');
-        if (tv) {
-            tv._origHeight = tv.style.height;
-            tv.style.height = 'auto';
-        }
-        var tb = tv ? tv.querySelector('.layui-table-body') : null;
-        if (tb) {
-            tb._origHeight = tb.style.height;
-            tb._origOverflow = tb.style.overflow;
-            tb.style.height = 'auto';
-            tb.style.overflow = 'visible';
-        }
-    });
-    window.addEventListener('afterprint', function() {
-        var tv = document.querySelector('.layui-table-view[lay-id="reportTable"]');
-        if (tv && tv._origHeight !== undefined) {
-            tv.style.height = tv._origHeight;
-        }
-        var tb = tv ? tv.querySelector('.layui-table-body') : null;
-        if (tb) {
-            if (tb._origHeight !== undefined) tb.style.height = tb._origHeight;
-            if (tb._origOverflow !== undefined) tb.style.overflow = tb._origOverflow;
-        }
-    });
 
     // 列设置面板
     document.getElementById('btnColToggle').addEventListener('click', function(e) {

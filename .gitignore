@@ -13,3 +13,15 @@ Thumbs.db
 /node_modules
 /runtime
 /.claude
+
+# 临时文件
+/tmp/
+/public/*.png
+/test_*.png
+/test_*.js
+/test_*.py
+
+# Runtime 缓存 JSON
+/*.json
+!composer.json
+!package.json
